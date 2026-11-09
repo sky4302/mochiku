@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import eu.kanade.presentation.more.stats.components.MochikuRecapSection
 import eu.kanade.presentation.more.stats.components.StatsItem
 import eu.kanade.presentation.more.stats.components.StatsOverviewItem
 import eu.kanade.presentation.more.stats.data.StatsData
@@ -33,10 +34,25 @@ fun StatsScreenContent(
     state: StatsScreenState.Success,
     paddingValues: PaddingValues,
 ) {
+    val none = stringResource(MR.strings.none)
+    val context = LocalContext.current
+    val readDurationString = remember(state.overview.totalReadDuration) {
+        state.overview.totalReadDuration
+            .toDuration(DurationUnit.MILLISECONDS)
+            .toDurationString(context, fallback = none)
+    }
+
     LazyColumn(
         contentPadding = paddingValues,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
     ) {
+        item {
+            MochikuRecapSection(
+                readDuration = readDurationString,
+                totalChaptersRead = state.chapters.readChapterCount,
+                libraryCount = state.overview.libraryMangaCount,
+            )
+        }
         item {
             OverviewSection(state.overview)
         }

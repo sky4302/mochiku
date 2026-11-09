@@ -1,206 +1,96 @@
 <div align="center">
 
-<a href="https://komikku-app.github.io">
-  <img width=200px height=200px src="./.github/readme-images/app-icon.png"/>
-</a><br/>
-<a href="https://trendshift.io/repositories/13696" target="_blank"><img src="https://trendshift.io/api/badge/repositories/13696" alt="komikku-app%2Fkomikku | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
- <h1 align="center"> Komikku </h1>
+# 🍡 Mochiku (餅ク)
+### The Sensual Manga Reader — A True Fork of Komikku with Mochy-Music Aesthetics & Recap Gimmicks
 
-| Releases | Preview |
-|----------|---------|
-| <div align="center"> [![GitHub downloads](https://img.shields.io/github/downloads/komikku-app/komikku/latest/total?label=Latest%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/komikku/releases/latest) [![GitHub downloads](https://img.shields.io/github/downloads/komikku-app/komikku/total?label=Total%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/komikku/releases) [![Stable build](https://img.shields.io/github/actions/workflow/status/komikku-app/komikku/build_release.yml?labelColor=27303D&label=Stable&labelColor=06599d&color=043b69)](https://github.com/komikku-app/komikku/actions/workflows/build_release.yml) | <div align="center"> [![GitHub downloads](https://img.shields.io/github/downloads/komikku-app/komikku-preview/latest/total?label=Latest%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/komikku-preview/releases/latest) [![GitHub downloads](https://img.shields.io/github/downloads/komikku-app/komikku-preview/total?label=Total%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/komikku-app/komikku-preview/releases) [![Preview build](https://img.shields.io/github/actions/workflow/status/komikku-app/komikku-preview/build_app.yml?labelColor=27303D&label=Preview&labelColor=2c2c47&color=1c1c39)](https://github.com/komikku-app/komikku-preview/actions/workflows/build_app.yml) |
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](/LICENSE)
+[![Platform: Android](https://img.shields.io/badge/Platform-Android%208.0+-green.svg?logo=android)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0-purple.svg?logo=kotlin)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg?logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
 
-*Requires Android 8.0 or higher.*
+**Mochiku (餅ク)** is a direct, full-featured fork of [Komikku](https://github.com/komikku-app/komikku) (based on TachiyomiSY & Mihon). It preserves **100% of Komikku's native functionality** (all extension sources, library categories, advanced readers, download queue, tracker sync, backups) while completely overhauling the UI to adopt the pure OLED dark aesthetic of [Mochy-Music](https://github.com/realidkroo/Mochy-Music) and introducing the **Manga Recap Gimmick & Otaku Passport**.
 
-[![Discord](https://img.shields.io/discord/1242381704459452488.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/85jB7V5AJR)
-[![CI](https://img.shields.io/github/actions/workflow/status/komikku-app/komikku/build_push.yml?labelColor=27303D&label=CI)](https://github.com/komikku-app/komikku/actions/workflows/build_push.yml)
-[![License: Apache-2.0](https://img.shields.io/github/license/komikku-app/komikku?labelColor=27303D&color=0877d2)](/LICENSE)
-[![Translation status](https://img.shields.io/weblate/progress/komikku-app?labelColor=27303D&color=946300)](https://hosted.weblate.org/engage/komikku-app/)
+</div>
 
-## Download
+---
 
-[![Stable](https://img.shields.io/github/release/komikku-app/komikku.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://github.com/komikku-app/komikku/releases/latest)
-[![Preview](https://img.shields.io/github/v/release/komikku-app/komikku-preview.svg?maxAge=3600&label=Preview&labelColor=2c2c47&color=1c1c39)](https://github.com/komikku-app/komikku-preview/releases/latest)
+## 🌟 What Makes Mochiku Unique
 
-*Requires Android 8.0 or higher.*
+### 1. 🎨 Mochy-Music Pure OLED Design (No Gradients)
+- **True OLED Black**: Deep `#000000` canvas with zero gray-wash backlight bleed.
+- **Frosted Dark Acrylic**: `#121214` glass cards with subtle `#222226` borders.
+- **Monochrome Typography**: `#FFFFFF` / `#E0E0E0` primary text and `#8E8E8E` neutral subtitles.
+- **Strictly No Colorful Gradients**: Clean, minimalist, and focused on artwork and content.
 
-[![Sponsor me on GitHub](https://custom-icon-badges.demolab.com/badge/-Sponsor-ea4aaa?style=for-the-badge&logo=heart&logoColor=white)](https://github.com/sponsors/cuong-tran "Sponsor me on GitHub")
+### 2. 🎴 The Manga Recap Gimmick & Otaku Passport (Built into Stats)
+- **Monthly & Yearly Range Selector**: Seamlessly inspect reading stats across `November 2026` or the full year `2026`.
+- **Signature Barcode Unlock Card**: Requires 10 chapters read this month to unlock, displaying a live progress bar and authentic Code128 barcode trigger.
+- **24-Hour Timeline Distribution Bar Chart**: Exact 00:00 to 23:00 timeline bars mapping your hourly reading habits and identifying your peak window (e.g. *01:00 AM Night Owl*).
+- **7-Day Weekday Tempo Bar Chart**: Visualizes reading volume from Monday through Sunday.
+- **3D Otaku Passport / Reader ID**: Brushed titanium metallic ID card with official ID number (`#MKU-2026-8492`), certified reader tier, and stats strip.
+- **Vintage Thermal Paper Manga Receipt**: Itemized convenience store receipt with chapters, page tally, and duration.
+- **Fullscreen Story Rewind**: Story-style slides with smooth counters and milestone celebrations.
 
-<div align="left">
-A free and open source manga reader which is based off TachiyomiSY & Mihon/Tachiyomi. This fork is meant to provide new & useful features while regularly take features/updates from Mihon or other forks like SY, J2K and Neko...
+### 3. 📖 100% of Komikku's Native Android Functionality Preserved
+- **Browse & Sources**: Full compatibility with all Tachiyomi/Mihon/Komikku extension sources (MangaDex, MangaHere, Asura, Flame, Local Source, etc.).
+- **Library**: Custom categories (`Reading`, `Plan to Read`, `Completed`, `Dropped`), display modes, and sorting.
+- **Updates & History**: Chronological update feeds with one-tap downloads, and exact reading history with session duration.
+- **Advanced Reader Engine**:
+  - Webtoon continuous vertical scroll
+  - Right-to-Left (Manga) and Left-to-Right (Comic) paged modes
+  - Dual-Page Spread view
+  - Color filters: Inverted (OLED Night Mode), Grayscale (E-Ink), Warm Sepia
+  - Whitespace border cropping & volume key navigation
+- **Trackers & Sync**: 2-way sync with AniList, MyAnimeList, Kitsu, and Shikimori.
+- **Downloads & Offline**: Background download queue and offline storage.
+- **Backup & Restore**: Full JSON/protobuf library backup and restoration.
 
-![screenshots of app](./.github/readme-images/screens.png)
+---
 
-<div align="left">
+## 🏗️ Project Architecture
 
-## Features
+Mochiku maintains Komikku's multi-module Android architecture:
 
-### Komikku's unique features:
-- `Suggestions` automatically showing source-website's recommendations / suggestions / related to current entry for all sources.
-- `Hidden categories` to hide yours things from *nosy* people.
-- `Auto theme color` based on each entry's cover for entry View & Reader.
-- `App custom theme` with `Color palettes` for endless color lover.
-- `Bulk-favorite` multiple entries all at once.
-- Source & Language icon on Library & various places. (Some language flags are not really accurate)
-- `Feed` now supports **all** sources, with more items (20 for now).
-- Fast browsing (for who with large library experiencing slow loading)
-- Grouped entries in Update tab (inspired by J2K).
-- Update notification with manga cover.
-- Auto `2-way sync` progress with trackers.
-- Chips for `Saved search` in source browse
-- `Panorama cover` showing wide cover in full.
-- `Merge multiple` library entries together at same time.
-- `Range-selection` for Migration.
-- Ability to `enable/disable repo`, with icon.
-- `Update Error` screen & migrating them away.
-- `to-be-updated` screen: which entries are going to be checked with smart-update?
-- `Search for sources` & Quick NSFW sources filter in Extensions, Browse & Migration screen.
-- `Feed` backup/restore/sync/re-order.
-- Long-click to add/remove single entry to/from library, everywhere.
-- Docking Read/Resume button to left/right.
-- In-app progress banner shows Library syncing / Backup restoring / Library updating progress.
-- Auto-install app update.
-- Configurable interval to refresh entries from downloaded storage.
-- Forked from SY so everything from SY.
-- Always up-to-date with Mihon & SY
-- More app themes & better UI, improvements...
+```
+├── app/                  # Android application & Jetpack Compose UI
+│   ├── src/main/java/eu/kanade/presentation/
+│   │   ├── theme/colorscheme/MochikuColorScheme.kt    # Mochy OLED theme
+│   │   └── more/stats/components/MochikuRecapSection.kt # Manga Recap Gimmick
+├── core/                 # Core utilities and archive handling
+├── data/                 # Database, room, and repository layers
+├── domain/               # Domain models, interactor use-cases, AppTheme
+├── source-api/           # Manga source and extension interfaces
+├── source-local/         # Local manga file reader
+├── i18n/                 # Multilingual localization resources
+└── build.gradle.kts      # Gradle multi-project build configuration
+```
 
+---
 
-<details>
-  <summary>Features from Mihon / Tachiyomi</summary>
+## 🛠️ Building From Source
 
-#### All up-to-date features from Mihon / Tachiyomi (original), include:
+### Prerequisites
+- Android Studio Ladybug / Meerkat or higher
+- JDK 17 (OpenJDK 17 recommended)
+- Android SDK Platform 35
 
-* Online reading from a variety of sources
-* Local reading of downloaded content
-* A configurable reader with multiple viewers, reading directions and other settings.
-* Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [MangaUpdates](https://mangaupdates.com), [Shikimori](https://shikimori.one), [Bangumi](https://bgm.tv/)
-* Categories to organize your library
-* Light and dark themes
-* Schedule updating your library for new chapters
-* Create backups locally to read offline or to your desired cloud service
-* Continue reading button in library
+### Build Commands
+```bash
+# Clone the repository
+git clone https://github.com/sky4302/mochiku.git
+cd mochiku
 
-</details>
+# Build debug APK
+./gradlew assembleDebug
 
-<details>
-  <summary>Features from Tachiyomi SY</summary>
+# Build release APK
+./gradlew assembleRelease
+```
 
-#### All features from TachiyomiSY:
-* Feed tab, where you can easily view the latest entries or saved search from multiple sources at same time.
-* Automatic webtoon detection, allowing the reader to switch to webtoon mode automatically when viewing one
-* Manga recommendations, uses MAL and Anilist, as well as Neko Similar Manga for Mangadex manga (Thanks to Az, She11Shocked, Carlos, and Goldbattle)
-* Lewd filter, hide the lewd manga in your library when you want to
-* Tracking filter, filter your tracked manga so you can see them or see non-tracked manga, made by She11Shocked
-* Search tracking status in library, made by She11Shocked
-* Custom categories for sources, liked the pinned sources, but you can make your own versions and put any sources in them
-* Manga info edit
-* Manga Cover view + share and save
-* Dynamic Categories, view the library in multiple ways
-* Smart background for reading modes like LTR or Vertical, changes the background based on the page color
-* Force disable webtoon zoom
-* Hentai features enable/disable, in advanced settings
-* Quick clean titles
-* Source migration, migrate all your manga from one source to another
-* Saving searches
-* Autoscroll
-* Page preload customization
-* Customize image cache size
-* Batch import of custom sources and featured extensions
-* Advanced source settings page, searching, enable/disable all
-* Click tag for local search, long click tag for global search
-* Merge multiple of the same manga from different sources
-* Drag and drop library sorting
-* Library search engine, includes exclude, quotes as absolute, and a bunch of other ways to search
-* New E-Hentai/ExHentai features, such as language settings and watched list settings
-* Enhanced views for internal and integrated sources
-* Enhanced usability for internal and delegated sources
+The compiled APK will be located in `app/build/outputs/apk/`.
 
-Custom sources:
-* E-Hentai/ExHentai
+---
 
-Additional features for some extensions, features include custom description, opening in app, batch add to library, and a bunch of other things based on the source:
-* 8Muses (EroMuse)
-* Mangadex
-* NHentai
-* Puruin
-* LANraragi
+## 📄 License
 
-</details>
-
-## Issues, Feature Requests and Contributing
-
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-<details><summary>Issues</summary>
-
-[Website](https://komikku-app.github.io/)
-
-1. **Before reporting a new issue, take a look at the [FAQ](https://komikku-app.github.io/docs/faq/general), the [changelog](https://github.com/komikku-app/komikku/releases) and the already opened [issues](https://github.com/komikku-app/komikku/issues).**
-2. If you are unsure, ask here: [![Discord](https://img.shields.io/discord/1242381704459452488.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/85jB7V5AJR)
-
-</details>
-
-<details><summary>Bugs</summary>
-
-* Include version (More → About → Version)
- * If not latest, try updating, it may have already been solved
- * Preview version is equal to the number of commits as seen on the main page
-* Include steps to reproduce (if not obvious from description)
-* Include screenshot (if needed)
-* If it could be device-dependent, try reproducing on another device (if possible)
-* Don't group unrelated requests into one issue
-
-Use the [issue forms](https://github.com/komikku-app/komikku/issues/new/choose) to submit a bug.
-
-</details>
-
-<details><summary>Feature Requests</summary>
-
-* Write a detailed issue, explaining what it should do or how.
-* Include screenshot (if needed).
-</details>
-
-<details><summary>Contributing</summary>
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
-</details>
-
-<details><summary>Code of Conduct</summary>
-
-See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
-</details>
-
-<div align="center">
-
-### Credits
-
-Thank you to all the people who have contributed!
-
-<a href="https://github.com/komikku-app/komikku/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=komikku-app/komikku" alt="Komikku app contributors" title="Komikku app contributors" width="800"/>
-</a>
-
-![Visitor Count](https://count.getloli.com/get/@komikku-app?theme=capoo-2)
-
-### Disclaimer
-
-The developer(s) of this application does not have any affiliation with the content providers available, and this application hosts zero content.
-
-<div align="left">
-
-## License
-
-    Copyright 2015 Javier Tomás
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+Mochiku is licensed under the [Apache License 2.0](LICENSE) honoring the upstream licenses of Komikku, TachiyomiSY, and Mihon.
