@@ -16,12 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ConfirmationNumber
-import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Receipt
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,12 +37,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import eu.kanade.presentation.more.profile.MochikuEditProfileDialog
+import eu.kanade.presentation.more.profile.MochikuIdCard
+import eu.kanade.presentation.more.profile.MochikuProfileStore
+import eu.kanade.presentation.more.profile.MochikuStoryRecapDialog
 
 /**
  * Mochiku Manga Recap & Otaku Passport Gimmick Component (adapted from Mochy-Music).
@@ -57,8 +62,14 @@ fun MochikuRecapSection(
     totalChaptersRead: Int,
     libraryCount: Int,
 ) {
+    val context = LocalContext.current
+    var username by remember { mutableStateOf(MochikuProfileStore.getUsername(context)) }
+    var photoPath by remember { mutableStateOf(MochikuProfileStore.getPhotoPath(context)) }
+    val cardNumber = remember { MochikuProfileStore.getCardNumber(context) }
+    val joinedDate = remember { MochikuProfileStore.getJoinedDate(context) }
+
     var rangeMode by remember { mutableStateOf("Month") }
-    var showPassportDialog by remember { mutableStateOf(false) }
+    var showEditProfileDialog by remember { mutableStateOf(false) }
     var showReceiptDialog by remember { mutableStateOf(false) }
     var showStoryDialog by remember { mutableStateOf(false) }
 
@@ -70,7 +81,7 @@ fun MochikuRecapSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         // Section Header & Range Selector
         Row(
@@ -80,7 +91,7 @@ fun MochikuRecapSection(
         ) {
             Column {
                 Text(
-                    text = "Mochiku Recap Gimmick",
+                    text = "Mochiku Manga Passport & Recap",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -133,7 +144,17 @@ fun MochikuRecapSection(
             }
         }
 
-        // Signature Mochy Barcode Unlock Card
+        // The Signature Mochy 3D ID Card with Tap-to-Flip and Laser Scanning Barcode
+        MochikuIdCard(
+            username = username,
+            photoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            onEditProfileClick = { showEditProfileDialog = true },
+            onLaunchRecap = { showStoryDialog = true },
+        )
+
+        // Barcode Unlock Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -151,7 +172,7 @@ fun MochikuRecapSection(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (rangeMode == "Month") "November 2026 Rewind" else "Year 2026 Rewind",
+                            text = if (rangeMode == "Month") "Monthly Rewind Verification" else "Annual Rewind Verification",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
@@ -159,7 +180,7 @@ fun MochikuRecapSection(
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (isUnlocked) {
-                                "Requirements met! Tap Launch to view your full story recap."
+                                "Requirements met! Tap the card above to scan barcode, or launch recap below."
                             } else {
                                 "Read at least $minChaptersRequired chapters this month to unlock full story ($totalChaptersRead / $minChaptersRequired completed)."
                             },
@@ -167,49 +188,18 @@ fun MochikuRecapSection(
                             color = Color(0xFF8E8E8E),
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Minimal Barcode Graphic
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.White,
-                        modifier = Modifier.padding(2.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Text(
-                                text = "|||| | ||||| ||",
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                            )
-                            Text(
-                                text = "MOCHIKU",
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 8.sp,
-                                color = Color.Black,
-                            )
-                        }
-                    }
                 }
 
                 // Unlock Progress Bar
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    LinearProgressIndicator(
-                        progress = { unlockProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(50)),
-                        color = Color.White,
-                        trackColor = Color(0xFF222228),
-                    )
-                }
+                LinearProgressIndicator(
+                    progress = { unlockProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(50)),
+                    color = if (isUnlocked) Color(0xFF52FF7A) else Color.White,
+                    trackColor = Color(0xFF222228),
+                )
 
                 // Action Buttons
                 Row(
@@ -218,12 +208,12 @@ fun MochikuRecapSection(
                 ) {
                     Button(
                         onClick = { showStoryDialog = true },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.White,
                             contentColor = Color.Black,
                         ),
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.PlayArrow,
@@ -235,64 +225,71 @@ fun MochikuRecapSection(
                     }
 
                     OutlinedButton(
-                        onClick = { showPassportDialog = true },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333338)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Shield,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("3D Passport", fontSize = 12.sp)
-                    }
-
-                    OutlinedButton(
                         onClick = { showReceiptDialog = true },
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333338)),
+                        modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF33333C)),
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Receipt,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(15.dp),
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Receipt", fontSize = 12.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = { showEditProfileDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF33333C)),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Profile", fontSize = 12.sp)
                     }
                 }
             }
         }
 
-        // 24-Hour Timeline Distribution Card
+        // Reading Activity Histogram (24-Hour Binge Distribution)
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF0E0E12)),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E1E24)),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF101014)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF222228)),
         ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Reading Time by Hour of Day",
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "24-Hour Reading Tempo",
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
+                        fontSize = 13.sp,
                     )
                     Text(
-                        text = "Peak: 01:00 AM 🌙",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = "Peak: 22:00 - 01:00",
+                        fontSize = 10.sp,
                         fontFamily = FontFamily.Monospace,
                         color = Color(0xFF8E8E8E),
                     )
                 }
 
-                // 24 Hour Histogram Simulation (Mochy-Music Style)
+                // 24 Hour Bar chart
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -302,7 +299,7 @@ fun MochikuRecapSection(
                 ) {
                     val sampleHours = listOf(
                         10, 8, 4, 2, 0, 0, 2, 8, 14, 18, 12, 10,
-                        15, 20, 25, 30, 22, 18, 25, 35, 45, 60, 80, 55
+                        15, 20, 25, 30, 22, 18, 25, 35, 45, 60, 80, 55,
                     )
                     sampleHours.forEachIndexed { hr, value ->
                         val isPeak = hr == 22 || hr == 23 || hr == 0
@@ -311,7 +308,7 @@ fun MochikuRecapSection(
                                 .weight(1f)
                                 .height((value * 0.45).dp)
                                 .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
-                                .background(if (isPeak) Color.White else Color(0xFF2C2C34)),
+                                .background(if (isPeak) Color(0xFF52FF7A) else Color(0xFF2C2C34)),
                         )
                     }
                 }
@@ -330,124 +327,57 @@ fun MochikuRecapSection(
         }
     }
 
-    // 1. 3D Otaku Passport Dialog
-    if (showPassportDialog) {
-        Dialog(onDismissRequest = { showPassportDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color(0xFF0C0C0E),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2E2E38)),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "OTAKU PASSPORT",
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 13.sp,
-                            color = Color.White,
-                        )
-                        Text(
-                            text = "TIER: S-RANK",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            color = Color(0xFF8E8E8E),
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(70.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF1E1E24))
-                            .border(2.dp, Color(0xFF3E3E4C), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("🍡", fontSize = 32.sp)
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Arif Fahmi",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp,
-                            color = Color.White,
-                        )
-                        Text(
-                            text = "Night Owl Binger 🌙",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp,
-                            color = Color(0xFFCCCCCC),
-                        )
-                        Text(
-                            text = "ID: #MKU-2026-8492",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.sp,
-                            color = Color(0xFF777777),
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF141418))
-                            .padding(vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("CHAPTERS", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF888888))
-                            Text("$totalChaptersRead", fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("DURATION", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF888888))
-                            Text(readDuration, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("TITLES", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF888888))
-                            Text("$libraryCount", fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                    }
-
-                    Button(
-                        onClick = { showPassportDialog = false },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-                    ) {
-                        Text("Close", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
+    // Set Up Profile Dialog
+    if (showEditProfileDialog) {
+        MochikuEditProfileDialog(
+            initialUsername = username,
+            initialPhotoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            onDismissRequest = { showEditProfileDialog = false },
+            onProfileSaved = { newName, newPhoto ->
+                username = newName
+                photoPath = newPhoto
+            },
+        )
     }
 
-    // 2. Vintage Thermal Paper Receipt Dialog
+    // Vintage Thermal Paper Receipt Dialog with serrated edge
     if (showReceiptDialog) {
         Dialog(onDismissRequest = { showReceiptDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFFAFAF9),
-                modifier = Modifier.fillMaxWidth(),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .drawBehind {
+                        val teethCount = 14
+                        val teethHeight = 12.dp.toPx()
+                        val path = Path().apply {
+                            moveTo(0f, 0f)
+                            lineTo(size.width, 0f)
+                            lineTo(size.width, size.height - teethHeight)
+                            val toothWidth = size.width / teethCount
+                            for (i in teethCount downTo 1) {
+                                val midX = (i - 0.5f) * toothWidth
+                                val startX = (i - 1) * toothWidth
+                                lineTo(midX, size.height)
+                                lineTo(startX, size.height - teethHeight)
+                            }
+                            close()
+                        }
+                        drawPath(path, color = Color(0xFFF6F6F4))
+                    }
+                    .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp),
             ) {
                 Column(
-                    modifier = Modifier.padding(18.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
                         text = "MOCHIKU MANGA MART",
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         color = Color.Black,
                     )
                     Text(
@@ -457,16 +387,39 @@ fun MochikuRecapSection(
                         color = Color(0xFF555555),
                     )
                     Text(
-                        text = "--------------------------------",
+                        text = "--------------------------------------",
                         fontFamily = FontFamily.Monospace,
                         color = Color(0xFF888888),
                     )
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("READER: Arif Fahmi", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.Black)
-                        Text("TXN: #8492", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.Black)
+                        Text("READER: $username", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.Black)
+                        Text("TXN: #${cardNumber.takeLast(4)}", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.Black)
                     }
                     Text(
-                        text = "--------------------------------",
+                        text = "--------------------------------------",
+                        fontFamily = FontFamily.Monospace,
+                        color = Color(0xFF888888),
+                    )
+
+                    val sampleItems = listOf(
+                        "1x Chainsaw Man - 1.2h",
+                        "2x Oshi no Ko - 0.9h",
+                        "3x Frieren: Beyond Journey's End - 0.8h",
+                        "4x Dandadan - 0.7h",
+                        "5x Jujutsu Kaisen - 0.6h",
+                    )
+                    sampleItems.forEach { item ->
+                        Text(
+                            text = item,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.5.sp,
+                            color = Color(0xFF222222),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+
+                    Text(
+                        text = "--------------------------------------",
                         fontFamily = FontFamily.Monospace,
                         color = Color(0xFF888888),
                     )
@@ -479,21 +432,22 @@ fun MochikuRecapSection(
                         Text(readDuration, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
                     Text(
-                        text = "--------------------------------",
+                        text = "--------------------------------------",
                         fontFamily = FontFamily.Monospace,
                         color = Color(0xFF888888),
+                    )
+                    Text(
+                        text = "END OF LINE",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        color = Color.Black,
                     )
                     Text(
                         text = "||||||| | ||||| |||| | ||||||||",
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
-                    )
-                    Text(
-                        text = "THANK YOU FOR DEVOURING STORIES!",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 9.sp,
-                        color = Color(0xFF666666),
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -511,71 +465,17 @@ fun MochikuRecapSection(
         }
     }
 
-    // 3. Cinematic Story Recap Dialog
+    // Fullscreen Story Dialog
     if (showStoryDialog) {
-        Dialog(onDismissRequest = { showStoryDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color(0xFF08080A),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF24242C)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(420.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "MOCHIKU REWIND",
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            color = Color(0xFF8E8E8E),
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Your Reading Summary",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 20.sp,
-                            color = Color.White,
-                        )
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = readDuration,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 32.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = Color.White,
-                        )
-                        Text(
-                            text = "$totalChaptersRead Chapters Cleared",
-                            fontSize = 13.sp,
-                            color = Color(0xFFCCCCCC),
-                        )
-                        Text(
-                            text = "You are in the top 3% of readers this period 👑",
-                            fontSize = 11.sp,
-                            color = Color(0xFF8E8E8E),
-                        )
-                    }
-
-                    Button(
-                        onClick = { showStoryDialog = false },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-                    ) {
-                        Text("Done", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
+        MochikuStoryRecapDialog(
+            username = username,
+            photoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            readDuration = readDuration,
+            totalChaptersRead = totalChaptersRead,
+            libraryCount = libraryCount,
+            onDismissRequest = { showStoryDialog = false },
+        )
     }
 }

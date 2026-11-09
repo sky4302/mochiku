@@ -1,0 +1,226 @@
+package eu.kanade.presentation.more.profile
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.QueryStats
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import tachiyomi.domain.history.interactor.GetTotalReadDuration
+import tachiyomi.domain.manga.interactor.GetLibraryManga
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+
+@Composable
+fun MochikuProfileHeader(
+    onClickStats: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    var username by remember { mutableStateOf(MochikuProfileStore.getUsername(context)) }
+    var photoPath by remember { mutableStateOf(MochikuProfileStore.getPhotoPath(context)) }
+    val cardNumber = remember { MochikuProfileStore.getCardNumber(context) }
+    val joinedDate = remember { MochikuProfileStore.getJoinedDate(context) }
+
+    var showEditProfileDialog by remember { mutableStateOf(false) }
+    var showStoryRecapDialog by remember { mutableStateOf(false) }
+
+    // Read live stats asynchronously
+    val (readDuration, totalChapters, libraryCount) = produceState(
+        initialValue = Triple("0h 0m", 0, 0),
+    ) {
+        val durationMs = runCatching { Injekt.get<GetTotalReadDuration>().await() }.getOrDefault(0L)
+        val libraryManga = runCatching { Injekt.get<GetLibraryManga>().await() }.getOrDefault(emptyList())
+        val chapters = libraryManga.sumOf { it.readCount }.toInt()
+        val titles = libraryManga.size
+
+        val hours = durationMs / (1000 * 60 * 60)
+        val minutes = (durationMs / (1000 * 60)) % 60
+        val formattedDuration = if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+
+        value = Triple(formattedDuration, chapters, titles)
+    }.value
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        // Top Greeting (Matches Mochy-Music: "Hello again, Sky!")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = "Hello again, $username!",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                )
+                Text(
+                    text = "Mochiku Manga Profile",
+                    fontSize = 12.sp,
+                    color = Color(0xFF8E8E8E),
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+
+            OutlinedButton(
+                onClick = { showEditProfileDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF33333C)),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+            ) {
+                Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Edit Profile", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        // The Signature Mochy 3D ID Card
+        MochikuIdCard(
+            username = username,
+            photoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            onEditProfileClick = { showEditProfileDialog = true },
+            onLaunchRecap = { showStoryRecapDialog = true },
+        )
+
+        // Reading Time Card (Matches Mochy: "2h 9m Total Listening time | View Stats >")
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = Color(0xFF141416),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF26262C)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClickStats),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.QueryStats,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
+                    )
+
+                    Column {
+                        Text(
+                            text = readDuration,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color.White,
+                        )
+                        Text(
+                            text = "Total Reading time · $totalChapters ch read",
+                            fontSize = 11.sp,
+                            color = Color(0xFF8E8E8E),
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "View Stats",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+                        contentDescription = null,
+                        tint = Color(0xFF8E8E8E),
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(
+            color = Color(0xFF1E1E24),
+            thickness = 1.dp,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+
+    // Set Up Profile Dialog
+    if (showEditProfileDialog) {
+        MochikuEditProfileDialog(
+            initialUsername = username,
+            initialPhotoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            onDismissRequest = { showEditProfileDialog = false },
+            onProfileSaved = { newName, newPhoto ->
+                username = newName
+                photoPath = newPhoto
+            },
+        )
+    }
+
+    // Fullscreen Story Recap Dialog
+    if (showStoryRecapDialog) {
+        MochikuStoryRecapDialog(
+            username = username,
+            photoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            readDuration = readDuration,
+            totalChaptersRead = totalChapters,
+            libraryCount = libraryCount,
+            onDismissRequest = { showStoryRecapDialog = false },
+        )
+    }
+}

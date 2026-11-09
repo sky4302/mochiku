@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import eu.kanade.presentation.more.profile.MochikuProfileHeader
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
@@ -93,7 +94,7 @@ fun MoreScreen(
             contentPadding = contentPadding,
         ) {
             item {
-                LogoHeader()
+                MochikuProfileHeader(onClickStats = onClickStats)
             }
             item {
                 SwitchPreferenceWidget(
