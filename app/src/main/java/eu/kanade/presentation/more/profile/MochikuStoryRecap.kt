@@ -2,7 +2,8 @@ package eu.kanade.presentation.more.profile
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -10,7 +11,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,22 +28,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,9 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
-import java.time.LocalDate
-import java.time.format.TextStyle
-import java.util.Locale
+import kotlinx.coroutines.delay
 
 @Composable
 fun MochikuStoryRecapDialog(
@@ -79,13 +76,15 @@ fun MochikuStoryRecapDialog(
     libraryCount: Int,
     onDismissRequest: () -> Unit,
 ) {
-    var currentSlide by remember { mutableIntStateOf(0) }
-    val totalSlides = 8
-    val monthName = remember {
-        LocalDate.now().month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+    // Query actual monthly reading data from Komikku's history database
+    val recapData by produceState<MochikuRecapData?>(initialValue = null) {
+        value = MochikuRecapDataEngine.loadCurrentMonthRecap()
     }
 
-    // Top Progress Bar segments
+    var currentSlide by remember { mutableIntStateOf(0) }
+    var previousSlide by remember { mutableIntStateOf(0) }
+    val totalSlides = 8
+
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -95,8 +94,8 @@ fun MochikuStoryRecapDialog(
                 .fillMaxSize()
                 .background(Color.Black)
                 .drawBehind {
-                    // Subtle background dot matrix like Mochy
-                    val dotColor = Color(0xFF1E1E22)
+                    // Mochy-style dot matrix grid
+                    val dotColor = Color(0xFF1B1B1E)
                     val spacing = 28.dp.toPx()
                     val radius = 1.2.dp.toPx()
                     var x = 0f
@@ -110,254 +109,373 @@ fun MochikuStoryRecapDialog(
                     }
                 },
         ) {
-            // Tap navigation overlay (Left = back, Right = forward)
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            if (currentSlide > 0) currentSlide--
-                        },
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(2f)
-                        .fillMaxHeight()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            if (currentSlide < totalSlides - 1) {
-                                currentSlide++
-                            } else {
-                                onDismissRequest()
-                            }
-                        },
-                )
-            }
-
-            // Top Header: Segmented Story Bar & Close Button
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 18.dp, start = 16.dp, end = 16.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    for (i in 0 until totalSlides) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(3.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(
-                                    when {
-                                        i < currentSlide -> Color.White
-                                        i == currentSlide -> Color.White
-                                        else -> Color(0xFF333338)
-                                    },
-                                ),
+            val data = recapData
+            if (data == null) {
+                // Sleek loading spinner while reading SQLite history
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(36.dp))
+                        Text(
+                            text = "Analyzing reading history...",
+                            color = Color(0xFF8E8E8E),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
                         )
                     }
                 }
+            } else {
+                // Tap Navigation Overlay (Left 30% = Prev, Right 70% = Next)
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                if (currentSlide > 0) {
+                                    previousSlide = currentSlide
+                                    currentSlide--
+                                }
+                            },
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(2f)
+                            .fillMaxHeight()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                if (currentSlide < totalSlides - 1) {
+                                    previousSlide = currentSlide
+                                    currentSlide++
+                                } else {
+                                    onDismissRequest()
+                                }
+                            },
+                    )
+                }
 
-                Spacer(Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                // Top Segmented Progress Bar & Title
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 18.dp, start = 16.dp, end = 16.dp),
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.White,
-                            modifier = Modifier.size(26.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🍡", fontSize = 14.sp)
-                            }
+                        for (i in 0 until totalSlides) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(
+                                        when {
+                                            i < currentSlide -> Color.White
+                                            i == currentSlide -> Color.White
+                                            else -> Color(0xFF333338)
+                                        },
+                                    ),
+                            )
                         }
-                        Text(
-                            text = "Mochiku Recap · $monthName",
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFCCCCCC),
-                        )
                     }
 
-                    IconButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(36.dp),
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Close",
-                            tint = Color.White,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.White,
+                                modifier = Modifier.size(24.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("🍡", fontSize = 13.sp)
+                                }
+                            }
+                            Text(
+                                text = "Mochiku Recap · ${data.monthName} ${data.year}",
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFCCCCCC),
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onDismissRequest,
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = "Close",
+                                tint = Color.White,
+                            )
+                        }
                     }
                 }
-            }
 
-            // Slide Content Area
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 70.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                when (currentSlide) {
-                    0 -> SlideJourney(username, photoPath, joinedDate, readDuration)
-                    1 -> SlideMonthProgress(monthName, totalChaptersRead)
-                    2 -> SlideAuthorMangaCarousel(photoPath)
-                    3 -> SlideFavoriteMangaHighlight(totalChaptersRead)
-                    4 -> SlideCoverArtwork(totalChaptersRead)
-                    5 -> SlideMilestoneChapters(totalChaptersRead)
-                    6 -> SlideThermalReceipt(username, cardNumber, readDuration, totalChaptersRead, libraryCount)
-                    7 -> SlideConclusion(username, cardNumber, joinedDate, monthName, onDismissRequest)
+                // Slide Content with PPTX Deck Transitions
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp, vertical = 70.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AnimatedContent(
+                        targetState = currentSlide,
+                        transitionSpec = {
+                            if (targetState > initialState) {
+                                (slideInHorizontally(tween(350, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300)))
+                                    .togetherWith(slideOutHorizontally(tween(350, easing = FastOutSlowInEasing)) { -it / 2 } + fadeOut(tween(250)))
+                            } else {
+                                (slideInHorizontally(tween(350, easing = FastOutSlowInEasing)) { -it } + fadeIn(tween(300)))
+                                    .togetherWith(slideOutHorizontally(tween(350, easing = FastOutSlowInEasing)) { it / 2 } + fadeOut(tween(250)))
+                            }
+                        },
+                        label = "pptxSlideTransition",
+                    ) { targetSlide ->
+                        when (targetSlide) {
+                            0 -> SlideJourney(username, photoPath, joinedDate, data.allTimeDurationFormatted)
+                            1 -> SlideMonthProgress(data.monthName, data.monthChaptersRead)
+                            2 -> SlideAuthorMangaCarousel(photoPath, data)
+                            3 -> SlideFavoriteMangaHighlight(data)
+                            4 -> SlideCoverArtwork(data)
+                            5 -> SlideMilestoneChapters(data)
+                            6 -> SlideThermalReceipt(username, cardNumber, data)
+                            7 -> SlideConclusion(username, cardNumber, joinedDate, data.monthName, onDismissRequest)
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+/** Reusable PowerPoint-style entrance build-in component */
+@Composable
+private fun PptxBuildIn(
+    index: Int,
+    stepDelayMs: Int = 140,
+    content: @Composable () -> Unit,
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay((index * stepDelayMs).toLong())
+        visible = true
+    }
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        label = "pptxAlpha",
+    )
+    val offsetY by animateDpAsState(
+        targetValue = if (visible) 0.dp else 26.dp,
+        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        label = "pptxOffset",
+    )
+    Box(
+        modifier = Modifier.graphicsLayer {
+            this.alpha = alpha
+            translationY = offsetY.toPx()
+        },
+    ) {
+        content()
     }
 }
 
 /** Slide 1: Journey Start */
 @Composable
-private fun SlideJourney(username: String, photoPath: String?, joinedDate: String, readDuration: String) {
+private fun SlideJourney(
+    username: String,
+    photoPath: String?,
+    joinedDate: String,
+    allTimeDurationFormatted: String,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        StoryAvatar(photoPath = photoPath, size = 110)
+        PptxBuildIn(index = 0) {
+            StoryAvatar(photoPath = photoPath, size = 110)
+        }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
-        Text(
-            text = "$username you started your journey in Mochiku on",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFFCCCCCC),
-            textAlign = TextAlign.Center,
-        )
+        PptxBuildIn(index = 1) {
+            Text(
+                text = "$username you started your journey in Mochiku on",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFCCCCCC),
+                textAlign = TextAlign.Center,
+            )
+        }
 
-        Text(
-            text = joinedDate,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-        )
+        PptxBuildIn(index = 2) {
+            Text(
+                text = joinedDate,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+        }
 
-        Text(
-            text = "and you have been devouring manga for a total time of",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFFCCCCCC),
-            textAlign = TextAlign.Center,
-        )
+        PptxBuildIn(index = 3) {
+            Text(
+                text = "and you have been reading manga for a total time of",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFCCCCCC),
+                textAlign = TextAlign.Center,
+            )
+        }
 
-        Text(
-            text = readDuration,
-            fontSize = 42.sp,
-            fontWeight = FontWeight.Black,
-            fontFamily = FontFamily.Monospace,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        Text(
-            text = "so long, partners!",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF999999),
-        )
-
-        Text(
-            text = "TAP TO CONTINUE >",
-            fontSize = 11.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color(0xFF666666),
-        )
-    }
-}
-
-/** Slide 2: Month Pace (Progress Bar) */
-@Composable
-private fun SlideMonthProgress(monthName: String, totalChaptersRead: Int) {
-    val progress = (totalChaptersRead / 50f).coerceIn(0.15f, 1f)
-    val percentage = (progress * 100).toInt()
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        Text(
-            text = "$monthName is",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFE0E0E0),
-        )
-
-        Text(
-            text = "$percentage%",
-            fontSize = 72.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
-        )
-
-        Text(
-            text = "out of 100%",
-            fontSize = 16.sp,
-            fontFamily = FontFamily.Monospace,
-            color = Color(0xFF8E8E8E),
-        )
-
-        // Rounded progress bar with glowing green accent
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .height(28.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFF222228)),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF52FF7A)),
+        PptxBuildIn(index = 4) {
+            Text(
+                text = allTimeDurationFormatted,
+                fontSize = 44.sp,
+                fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Monospace,
+                color = Color.White,
+                textAlign = TextAlign.Center,
             )
         }
 
         Spacer(Modifier.height(10.dp))
 
-        Text(
-            text = "$totalChaptersRead chapters read this month 📖",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.White,
+        PptxBuildIn(index = 5) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "so long, partners!",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF999999),
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "TAP TO CONTINUE >",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF666666),
+                )
+            }
+        }
+    }
+}
+
+/** Slide 2: Month Pace (Progress Bar with animated count-up) */
+@Composable
+private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
+    val targetProgress = if (monthChaptersRead > 0) (monthChaptersRead / 50f).coerceIn(0.15f, 1f) else 0.05f
+    val targetPercentage = (targetProgress * 100).toInt()
+
+    // PPTX Counter animation
+    val animatedPercent = remember { Animatable(0f) }
+    val animatedBar = remember { Animatable(0f) }
+
+    LaunchedEffect(targetPercentage) {
+        delay(250)
+        animatedPercent.animateTo(
+            targetValue = targetPercentage.toFloat(),
+            animationSpec = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
         )
+    }
+
+    LaunchedEffect(targetProgress) {
+        delay(250)
+        animatedBar.animateTo(
+            targetValue = targetProgress,
+            animationSpec = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        PptxBuildIn(index = 0) {
+            Text(
+                text = "$monthName is",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE0E0E0),
+            )
+        }
+
+        PptxBuildIn(index = 1) {
+            Text(
+                text = "${animatedPercent.value.toInt()}%",
+                fontSize = 76.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+            )
+        }
+
+        PptxBuildIn(index = 2) {
+            Text(
+                text = "out of 100%",
+                fontSize = 16.sp,
+                fontFamily = FontFamily.Monospace,
+                color = Color(0xFF8E8E8E),
+            )
+        }
+
+        PptxBuildIn(index = 3) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(26.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(Color(0xFF222228)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedBar.value.coerceIn(0.01f, 1f))
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(Color(0xFF52FF7A)),
+                )
+            }
+        }
+
+        PptxBuildIn(index = 4) {
+            Text(
+                text = if (monthChaptersRead > 0) {
+                    "$monthChaptersRead chapters read this month 📖"
+                } else {
+                    "0 chapters read so far in $monthName"
+                },
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+            )
+        }
     }
 }
 
 /** Slide 3: Again and again this author / manga */
 @Composable
-private fun SlideAuthorMangaCarousel(photoPath: String?) {
+private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -365,42 +483,90 @@ private fun SlideAuthorMangaCarousel(photoPath: String?) {
     ) {
         Column(
             modifier = Modifier.weight(1.2f),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            StoryAvatar(photoPath = photoPath, size = 64)
+            PptxBuildIn(index = 0) {
+                StoryAvatar(photoPath = photoPath, size = 56)
+            }
 
-            Text(
-                text = "Again\nand\nagain",
-                fontSize = 42.sp,
-                lineHeight = 46.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White,
-            )
+            PptxBuildIn(index = 1) {
+                Text(
+                    text = "Again\nand\nagain",
+                    fontSize = 42.sp,
+                    lineHeight = 46.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                )
+            }
 
-            Text(
-                text = "this author..",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFAAAAAA),
-            )
+            PptxBuildIn(index = 2) {
+                Text(
+                    text = if (data.topAuthor != null) "this author.." else "this series..",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFAAAAAA),
+                )
+                if (data.topAuthor != null) {
+                    Text(
+                        text = data.topAuthor,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF52FF7A),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
 
-        // Rolling circular covers
+        // Rolling circular covers from user's actual reading history
         Column(
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            for (icon in listOf("⚔️", "🌸", "🌙", "🔥")) {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF1E1E24))
-                        .border(2.dp, Color(0xFF33333E), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(icon, fontSize = 34.sp)
+            val list = if (data.topMangaList.isNotEmpty()) {
+                data.topMangaList.take(4)
+            } else {
+                emptyList()
+            }
+
+            if (list.isNotEmpty()) {
+                list.forEachIndexed { idx, item ->
+                    PptxBuildIn(index = 2 + idx, stepDelayMs = 120) {
+                        Box(
+                            modifier = Modifier
+                                .size(74.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF1E1E24))
+                                .border(2.dp, Color(0xFF444450), CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (item.cover != null) {
+                                AsyncImage(
+                                    model = item.cover,
+                                    contentDescription = item.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                Text("📖", fontSize = 30.sp)
+                            }
+                        }
+                    }
+                }
+            } else {
+                PptxBuildIn(index = 3) {
+                    Box(
+                        modifier = Modifier
+                            .size(74.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF1E1E24))
+                            .border(2.dp, Color(0xFF444450), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("📚", fontSize = 32.sp)
+                    }
                 }
             }
         }
@@ -409,198 +575,277 @@ private fun SlideAuthorMangaCarousel(photoPath: String?) {
 
 /** Slide 4: Favorite Manga Highlight */
 @Composable
-private fun SlideFavoriteMangaHighlight(totalChaptersRead: Int) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = "Recognize this manga?",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-        )
+private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
+    val hero = data.heroManga
 
-        Text(
-            text = "that's your favorite this month!",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF9E9E9E),
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Box(contentAlignment = Alignment.Center) {
-            Box(
-                modifier = Modifier
-                    .size(140.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1B1B22))
-                    .border(3.dp, Color.White, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("📚", fontSize = 64.sp)
-            }
-
-            // Tilted floating badge like Mochy
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .graphicsLayer {
-                        rotationZ = 12f
-                        translationX = 14f
-                    },
-            ) {
-                Text(
-                    text = "${maxOf(totalChaptersRead / 2, 4)} chapters",
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = "Top Reader Choice",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = "${maxOf(totalChaptersRead, 10)}x Chapters Read",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
-            color = Color(0xFF52FF7A),
-        )
-    }
-}
-
-/** Slide 5: Read through the panels */
-@Composable
-private fun SlideCoverArtwork(totalChaptersRead: Int) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        Text(
-            text = "Turn the page..",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
-        )
-
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .clip(RoundedCornerShape(26.dp))
-                .background(Color(0xFF16161C))
-                .border(2.dp, Color(0xFF32323E), RoundedCornerShape(26.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("🍙", fontSize = 72.sp)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "Mochiku Manga",
-                    fontSize = 14.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                )
-            }
-        }
-
-        Text(
-            text = "Every panel, every story, devoured.",
-            fontSize = 14.sp,
-            color = Color(0xFF8E8E8E),
-        )
-    }
-}
-
-/** Slide 6: Chapter Milestone */
-@Composable
-private fun SlideMilestoneChapters(totalChaptersRead: Int) {
-    val count = maxOf(totalChaptersRead, 12)
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text(
-            text = "$count Chapters!",
-            fontSize = 46.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = "Your favourite series this month!!!",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFE0E0E0),
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(Color(0xFF141418))
-                .border(1.dp, Color(0xFF2C2C36), RoundedCornerShape(50))
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-        ) {
+        PptxBuildIn(index = 0) {
             Text(
-                text = "✦ S-RANK OTAKU RATING ✦",
-                fontSize = 12.sp,
-                fontFamily = FontFamily.Monospace,
+                text = "Recognize this manga?",
+                fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF52FF7A),
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        PptxBuildIn(index = 1) {
+            Text(
+                text = if (hero != null) "that's your favorite this month!" else "read a chapter to crown your favorite!",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF9E9E9E),
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        PptxBuildIn(index = 2) {
+            Box(contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(136.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF1B1B22))
+                        .border(3.dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (hero?.cover != null) {
+                        AsyncImage(
+                            model = hero.cover,
+                            contentDescription = hero.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        Text("📚", fontSize = 56.sp)
+                    }
+                }
+
+                if (hero != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .graphicsLayer {
+                                rotationZ = 12f
+                                translationX = 12f
+                            },
+                    ) {
+                        Text(
+                            text = "${hero.chaptersRead} chapters",
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Black,
+                            color = Color.Black,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        PptxBuildIn(index = 3) {
+            Text(
+                text = hero?.title ?: "No Manga Read Yet",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        if (hero != null) {
+            PptxBuildIn(index = 4) {
+                Text(
+                    text = "${hero.chaptersRead}x Chapters · ${hero.durationFormatted}",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color(0xFF52FF7A),
+                )
+            }
+        }
+    }
+}
+
+/** Slide 5: Read through the panels (Showcase) */
+@Composable
+private fun SlideCoverArtwork(data: MochikuRecapData) {
+    val hero = data.heroManga
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        PptxBuildIn(index = 0) {
+            Text(
+                text = "Turn the page..",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+            )
+        }
+
+        PptxBuildIn(index = 1) {
+            Box(
+                modifier = Modifier
+                    .size(190.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF16161C))
+                    .border(2.dp, Color(0xFF32323E), RoundedCornerShape(24.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (hero?.cover != null) {
+                    AsyncImage(
+                        model = hero.cover,
+                        contentDescription = hero.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("🍙", fontSize = 64.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = "Mochiku Manga",
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                    }
+                }
+            }
+        }
+
+        PptxBuildIn(index = 2) {
+            Text(
+                text = hero?.title ?: "Every panel, every story, devoured.",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
-/** Slide 7: Vintage Thermal Paper Receipt ("Let's see your bill") */
+/** Slide 6: Chapter Milestone */
+@Composable
+private fun SlideMilestoneChapters(data: MochikuRecapData) {
+    val chapters = data.monthChaptersRead
+
+    // Number count-up
+    val countAnim = remember { Animatable(0f) }
+    LaunchedEffect(chapters) {
+        delay(200)
+        countAnim.animateTo(
+            targetValue = chapters.toFloat(),
+            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        PptxBuildIn(index = 0) {
+            Text(
+                text = "${countAnim.value.toInt()} Chapters!",
+                fontSize = 46.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        PptxBuildIn(index = 1) {
+            Text(
+                text = if (chapters > 0) "Your reading feat this month!!!" else "Ready for your next chapter!",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE0E0E0),
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        PptxBuildIn(index = 2) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0xFF141418))
+                    .border(1.dp, Color(0xFF2C2C36), RoundedCornerShape(50))
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = if (chapters >= 20) "✦ S-RANK OTAKU RATING ✦" else if (chapters >= 10) "✦ A-RANK READER STATUS ✦" else "✦ ADVENTURER STATUS ✦",
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF52FF7A),
+                )
+            }
+        }
+    }
+}
+
+/** Slide 7: Vintage Thermal Paper Receipt ("Let's see your bill") with printing slide-down animation */
 @Composable
 private fun SlideThermalReceipt(
     username: String,
     cardNumber: String,
-    readDuration: String,
-    totalChaptersRead: Int,
-    libraryCount: Int,
+    data: MochikuRecapData,
 ) {
+    // Thermal receipt printing slide-down animation
+    val receiptSlideY = remember { Animatable(-100f) }
+    val receiptAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        receiptSlideY.animateTo(0f, tween(durationMillis = 650, easing = FastOutSlowInEasing))
+    }
+    LaunchedEffect(Unit) {
+        receiptAlpha.animateTo(1f, tween(durationMillis = 400))
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "Let's see your bill",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
-            modifier = Modifier.padding(bottom = 12.dp),
-        )
+        PptxBuildIn(index = 0) {
+            Text(
+                text = "Let's see your bill",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+        }
 
         // Vintage thermal receipt card with serrated / jagged bottom edge
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
+                .graphicsLayer {
+                    translationY = receiptSlideY.value
+                    alpha = receiptAlpha.value
+                }
                 .drawBehind {
                     val teethCount = 14
                     val teethHeight = 12.dp.toPx()
@@ -635,25 +880,38 @@ private fun SlideThermalReceipt(
 
                 Spacer(Modifier.height(4.dp))
 
-                val sampleTitles = listOf(
-                    "1x Chainsaw Man - 1.2h",
-                    "2x Oshi no Ko - 0.9h",
-                    "3x Frieren: Beyond Journey's End - 0.8h",
-                    "4x Dandadan - 0.7h",
-                    "5x Jujutsu Kaisen - 0.6h",
-                    "6x Spy x Family - 0.5h",
-                    "7x Blue Lock - 0.4h",
-                    "8x Solo Leveling - 0.3h",
-                )
-
-                sampleTitles.take(minOf(sampleTitles.size, maxOf(libraryCount, 4))).forEach { item ->
+                if (data.topMangaList.isNotEmpty()) {
+                    data.topMangaList.take(8).forEachIndexed { i, item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "${i + 1}x ${item.title}",
+                                fontSize = 10.5.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color(0xFF222222),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "- ${item.durationFormatted}",
+                                fontSize = 10.5.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF444444),
+                            )
+                        }
+                    }
+                } else {
                     Text(
-                        text = item,
-                        fontSize = 10.5.sp,
+                        text = "No reading history recorded this month.",
+                        fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF222222),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        color = Color(0xFF666666),
                     )
                 }
 
@@ -667,7 +925,7 @@ private fun SlideThermalReceipt(
                 )
 
                 Text(
-                    text = "Total : $readDuration playtime",
+                    text = "Total : ${data.monthDurationFormatted} playtime",
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -675,7 +933,7 @@ private fun SlideThermalReceipt(
                 )
 
                 Text(
-                    text = "$totalChaptersRead chapters · $libraryCount titles in library",
+                    text = "${data.monthChaptersRead} chapters · ${data.libraryCount} titles in library",
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.sp,
                     color = Color(0xFF555555),
@@ -709,7 +967,7 @@ private fun SlideThermalReceipt(
     }
 }
 
-/** Slide 8: Conclusion ("There you go, That's your November recap!") */
+/** Slide 8: Conclusion */
 @Composable
 private fun SlideConclusion(
     username: String,
@@ -723,73 +981,81 @@ private fun SlideConclusion(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "There you go",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-        )
+        PptxBuildIn(index = 0) {
+            Text(
+                text = "There you go",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+        }
 
         // Mini preview of the ID card
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = Color(0xFF242428),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF383842)),
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(130.dp),
-        ) {
-            Row(
+        PptxBuildIn(index = 1) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = Color(0xFF242428),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF383842)),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .fillMaxWidth(0.9f)
+                    .height(130.dp),
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF383840)),
-                    contentAlignment = Alignment.Center,
+                        .fillMaxSize()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("🍡", fontSize = 28.sp)
-                }
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF383840)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("🍡", fontSize = 28.sp)
+                    }
 
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("PROFILE USR#$cardNumber", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF9E9E9E))
-                    Text(username, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text("joined at $joinedDate", fontSize = 9.sp, color = Color(0xFFCCCCCC))
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("PROFILE USR#$cardNumber", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF9E9E9E))
+                        Text(username, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("joined at $joinedDate", fontSize = 9.sp, color = Color(0xFFCCCCCC))
+                    }
                 }
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
 
-        Text(
-            text = "That's your $monthName recap!",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .clickable(onClick = onFinish)
-                .padding(horizontal = 28.dp, vertical = 12.dp),
-        ) {
+        PptxBuildIn(index = 2) {
             Text(
-                text = "TAP TO FINISH",
-                fontSize = 13.sp,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Black,
-                color = Color.Black,
+                text = "That's your $monthName recap!",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
             )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        PptxBuildIn(index = 3) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White)
+                    .clickable(onClick = onFinish)
+                    .padding(horizontal = 28.dp, vertical = 12.dp),
+            ) {
+                Text(
+                    text = "TAP TO FINISH",
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black,
+                )
+            }
         }
     }
 }

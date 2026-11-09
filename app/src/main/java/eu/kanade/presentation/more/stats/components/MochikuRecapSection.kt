@@ -47,9 +47,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.text.style.TextOverflow
 import eu.kanade.presentation.more.profile.MochikuEditProfileDialog
 import eu.kanade.presentation.more.profile.MochikuIdCard
 import eu.kanade.presentation.more.profile.MochikuProfileStore
+import eu.kanade.presentation.more.profile.MochikuRecapData
+import eu.kanade.presentation.more.profile.MochikuRecapDataEngine
 import eu.kanade.presentation.more.profile.MochikuStoryRecapDialog
 
 /**
@@ -73,9 +77,17 @@ fun MochikuRecapSection(
     var showReceiptDialog by remember { mutableStateOf(false) }
     var showStoryDialog by remember { mutableStateOf(false) }
 
+    // Load real reading history for current month
+    val recapData by produceState<MochikuRecapData?>(initialValue = null) {
+        value = MochikuRecapDataEngine.loadCurrentMonthRecap()
+    }
+    val effectiveChapters = recapData?.monthChaptersRead ?: totalChaptersRead
+    val effectiveDuration = recapData?.monthDurationFormatted ?: readDuration
+    val effectiveLibrary = recapData?.libraryCount ?: libraryCount
+
     val minChaptersRequired = 10
-    val unlockProgress = (totalChaptersRead.toFloat() / minChaptersRequired).coerceIn(0f, 1f)
-    val isUnlocked = totalChaptersRead >= minChaptersRequired
+    val unlockProgress = (effectiveChapters.toFloat() / minChaptersRequired).coerceIn(0f, 1f)
+    val isUnlocked = effectiveChapters >= minChaptersRequired
 
     Column(
         modifier = Modifier
@@ -182,7 +194,7 @@ fun MochikuRecapSection(
                             text = if (isUnlocked) {
                                 "Requirements met! Tap the card above to scan barcode, or launch recap below."
                             } else {
-                                "Read at least $minChaptersRequired chapters this month to unlock full story ($totalChaptersRead / $minChaptersRequired completed)."
+                                "Read at least $minChaptersRequired chapters this month to unlock full story ($effectiveChapters / $minChaptersRequired completed)."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF8E8E8E),
@@ -401,20 +413,38 @@ fun MochikuRecapSection(
                         color = Color(0xFF888888),
                     )
 
-                    val sampleItems = listOf(
-                        "1x Chainsaw Man - 1.2h",
-                        "2x Oshi no Ko - 0.9h",
-                        "3x Frieren: Beyond Journey's End - 0.8h",
-                        "4x Dandadan - 0.7h",
-                        "5x Jujutsu Kaisen - 0.6h",
-                    )
-                    sampleItems.forEach { item ->
+                    if (recapData != null && recapData!!.topMangaList.isNotEmpty()) {
+                        recapData!!.topMangaList.take(8).forEachIndexed { i, item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "${i + 1}x ${item.title}",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.5.sp,
+                                    color = Color(0xFF222222),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "- ${item.durationFormatted}",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF444444),
+                                )
+                            }
+                        }
+                    } else {
                         Text(
-                            text = item,
+                            text = "No reading history recorded this month.",
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 10.5.sp,
-                            color = Color(0xFF222222),
-                            modifier = Modifier.fillMaxWidth(),
+                            fontSize = 11.sp,
+                            color = Color(0xFF666666),
                         )
                     }
 
@@ -425,11 +455,11 @@ fun MochikuRecapSection(
                     )
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("TOTAL CHAPTERS:", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Black)
-                        Text("$totalChaptersRead", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text("$effectiveChapters", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("READ DURATION:", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Black)
-                        Text(readDuration, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text(effectiveDuration, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
                     Text(
                         text = "--------------------------------------",
@@ -472,9 +502,9 @@ fun MochikuRecapSection(
             photoPath = photoPath,
             cardNumber = cardNumber,
             joinedDate = joinedDate,
-            readDuration = readDuration,
-            totalChaptersRead = totalChaptersRead,
-            libraryCount = libraryCount,
+            readDuration = effectiveDuration,
+            totalChaptersRead = effectiveChapters,
+            libraryCount = effectiveLibrary,
             onDismissRequest = { showStoryDialog = false },
         )
     }

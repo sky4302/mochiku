@@ -59,21 +59,14 @@ fun MochikuProfileHeader(
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showStoryRecapDialog by remember { mutableStateOf(false) }
 
-    // Read live stats asynchronously
-    val (readDuration, totalChapters, libraryCount) = produceState(
-        initialValue = Triple("0h 0m", 0, 0),
-    ) {
-        val durationMs = runCatching { Injekt.get<GetTotalReadDuration>().await() }.getOrDefault(0L)
-        val libraryManga = runCatching { Injekt.get<GetLibraryManga>().await() }.getOrDefault(emptyList())
-        val chapters = libraryManga.sumOf { it.readCount }.toInt()
-        val titles = libraryManga.size
+    // Read live stats asynchronously from database
+    val recapData by produceState<MochikuRecapData?>(initialValue = null) {
+        value = MochikuRecapDataEngine.loadCurrentMonthRecap()
+    }
 
-        val hours = durationMs / (1000 * 60 * 60)
-        val minutes = (durationMs / (1000 * 60)) % 60
-        val formattedDuration = if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-
-        value = Triple(formattedDuration, chapters, titles)
-    }.value
+    val displayDuration = recapData?.monthDurationFormatted ?: "0h 0m"
+    val displayChapters = recapData?.monthChaptersRead ?: 0
+    val displayLibraryCount = recapData?.libraryCount ?: 0
 
     Column(
         modifier = modifier
@@ -154,14 +147,14 @@ fun MochikuProfileHeader(
 
                     Column {
                         Text(
-                            text = readDuration,
+                            text = displayDuration,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.Monospace,
                             color = Color.White,
                         )
                         Text(
-                            text = "Total Reading time · $totalChapters ch read",
+                            text = "This Month · $displayChapters ch read",
                             fontSize = 11.sp,
                             color = Color(0xFF8E8E8E),
                         )
@@ -217,9 +210,9 @@ fun MochikuProfileHeader(
             photoPath = photoPath,
             cardNumber = cardNumber,
             joinedDate = joinedDate,
-            readDuration = readDuration,
-            totalChaptersRead = totalChapters,
-            libraryCount = libraryCount,
+            readDuration = displayDuration,
+            totalChaptersRead = displayChapters,
+            libraryCount = displayLibraryCount,
             onDismissRequest = { showStoryRecapDialog = false },
         )
     }
