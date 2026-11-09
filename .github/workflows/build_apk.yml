@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     name: Build Mochiku APK
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -31,19 +31,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleStandardDebug --stacktrace -Pinclude-telemetry=false -Penable-updater=false
 
       - name: Prepare Output APK
         run: |
           mkdir -p output_apk
-          find app/build/outputs/apk/debug -name "*.apk" -exec cp {} output_apk/Mochiku-Debug.apk \;
+          find app/build/outputs/apk -name "*.apk" -exec cp {} output_apk/Mochiku-Debug.apk \;
           ls -la output_apk/
 
       - name: Upload APK Artifact
@@ -54,13 +51,13 @@ jobs:
           retention-days: 30
 
       - name: Create GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0-preview
           name: Mochiku v1.0.0-preview
           body: |
-            ### 🍡 Mochiku (餅ク) v1.0.0 Preview Release
+            ### 🍡 Mochiku (餅ク) v1.0.0 Preview
             True Komikku Android Fork with Mochy-Music OLED dark theme and Manga Recap Gimmick.
             
             - **OLED Dark Theme**: `#000000` true black, neutral gray typography, zero colorful gradients.
