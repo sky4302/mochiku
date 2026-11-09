@@ -35,12 +35,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build Debug APK
-        run: ./gradlew assembleStandardDebug --stacktrace -Pinclude-telemetry=false -Penable-updater=false
+        run: ./gradlew assembleDebug -Pinclude-telemetry=false -Penable-updater=false --stacktrace
 
       - name: Prepare Output APK
         run: |
           mkdir -p output_apk
-          find app/build/outputs/apk -name "*.apk" -exec cp {} output_apk/Mochiku-Debug.apk \;
+          find app/build/outputs/apk/debug -name "*.apk" -exec cp {} output_apk/Mochiku-Debug.apk \;
           ls -la output_apk/
 
       - name: Upload APK Artifact
