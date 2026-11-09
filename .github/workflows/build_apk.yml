@@ -1,0 +1,75 @@
+name: Build Mochiku APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '**.md'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Mochiku APK
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Prepare Output APK
+        run: |
+          mkdir -p output_apk
+          find app/build/outputs/apk/debug -name "*.apk" -exec cp {} output_apk/Mochiku-Debug.apk \;
+          ls -la output_apk/
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mochiku-Debug-APK
+          path: output_apk/Mochiku-Debug.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-preview
+          name: Mochiku v1.0.0-preview
+          body: |
+            ### 🍡 Mochiku (餅ク) v1.0.0 Preview Release
+            True Komikku Android Fork with Mochy-Music OLED dark theme and Manga Recap Gimmick.
+            
+            - **OLED Dark Theme**: `#000000` true black, neutral gray typography, zero colorful gradients.
+            - **Manga Recap Gimmick**: Monthly/Yearly range, Barcode unlock card, 24-Hour reading activity histogram, 7-Day weekly tempo.
+            - **100% Native Komikku Functions**: Extensions, Sources, Library categories, RTL/LTR/Webtoon readers, Trackers, Downloads.
+            
+            Download `Mochiku-Debug.apk` below!
+          files: output_apk/Mochiku-Debug.apk
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
