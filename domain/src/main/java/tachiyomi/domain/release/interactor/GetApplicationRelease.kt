@@ -28,13 +28,12 @@ class GetApplicationRelease(
         // KMK -->
         val releases = service.releaseNotes(arguments)
             .filter {
-                !it.preRelease &&
-                    isNewVersion(
-                        arguments.isPreview,
-                        arguments.commitCount,
-                        arguments.versionName,
-                        it.version,
-                    )
+                isNewVersion(
+                    arguments.isPreview,
+                    arguments.commitCount,
+                    arguments.versionName,
+                    it.version,
+                )
             }
 
         val latest = releases.getLatest() ?: return Result.NoNewUpdate
@@ -58,7 +57,6 @@ class GetApplicationRelease(
     // KMK -->
     suspend fun awaitReleaseNotes(arguments: Arguments): Result {
         val releases = service.releaseNotes(arguments)
-            .filter { !it.preRelease }
 
         val latest = releases.getLatest() ?: return Result.NoNewUpdate
         return Result.NewUpdate(latest)

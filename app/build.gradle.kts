@@ -28,14 +28,14 @@ android {
     defaultConfig {
         applicationId = "app.mochiku"
 
-        versionCode = 91
-        versionName = "1.14.10"
+        versionCode = 92
+        versionName = "1.14.11"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
         buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = false)}\"")
         buildConfigField("boolean", "TELEMETRY_INCLUDED", "${Config.includeTelemetry}")
-        buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
+        buildConfigField("boolean", "UPDATER_ENABLED", "true")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
