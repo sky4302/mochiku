@@ -469,7 +469,7 @@ class LocalSource(
 
     companion object {
         const val ID = 0L
-        const val HELP_URL = "https://komikku-app.github.io/docs/guides/local-source/"
+        const val HELP_URL = "https://github.com/sky4302/mochiku"
 
         // SY -->
         const val COMIC_INFO_ARCHIVE = "ComicInfo.cbm"

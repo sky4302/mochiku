@@ -3,20 +3,40 @@ package eu.kanade.tachiyomi.ui.home
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -25,12 +45,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastForEachIndexed
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -127,15 +160,19 @@ object HomeScreen : Screen() {
                                 enter = expandVertically(),
                                 exit = shrinkVertically(),
                             ) {
-                                NavigationBar {
-                                    TABS
-                                        // SY -->
-                                        .fastFilter { it.isEnabled() }
-                                        // SY <--
-                                        .fastForEach {
-                                            NavigationBarItem(it/* SY --> */, alwaysShowLabel/* SY <-- */)
+                                val enabledTabs = remember(TABS) { TABS.fastFilter { it.isEnabled() } }
+                                val selectedIndex = enabledTabs.indexOfFirst { it::class == tabNavigator.current::class }
+                                MochikuCapsuleBottomBar(
+                                    tabs = enabledTabs,
+                                    selectedIndex = selectedIndex,
+                                    onTabSelected = { tab ->
+                                        if (tabNavigator.current::class != tab::class) {
+                                            tabNavigator.current = tab
+                                        } else {
+                                            scope.launch { tab.onReselect(navigator) }
                                         }
-                                }
+                                    },
+                                )
                             }
                         }
                     },
@@ -199,6 +236,74 @@ object HomeScreen : Screen() {
                             } else if (it.toLibraryUpdateErrors) {
                                 navigator.push(LibraryUpdateErrorScreen())
                                 // KMK <--
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun MochikuCapsuleBottomBar(
+        tabs: List<eu.kanade.presentation.util.Tab>,
+        selectedIndex: Int,
+        onTabSelected: (eu.kanade.presentation.util.Tab) -> Unit,
+    ) {
+        val haptic = LocalHapticFeedback.current
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .shadow(
+                        elevation = 12.dp,
+                        shape = RoundedCornerShape(50),
+                        spotColor = Color.Black.copy(alpha = 0.6f),
+                        ambientColor = Color.Black.copy(alpha = 0.4f),
+                    ),
+                shape = RoundedCornerShape(50),
+                color = Color(0xFF141416),
+                border = BorderStroke(1.dp, Color(0xFF26262E)),
+                tonalElevation = 0.dp,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 6.dp)
+                        .capsuleNavHighlight(selectedIndex = selectedIndex, tabCount = tabs.size),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    tabs.fastForEachIndexed { index, tab ->
+                        val isSelected = index == selectedIndex
+                        val interactionSource = remember { MutableInteractionSource() }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(50))
+                                .pressBounce(interactionSource, pressedScale = 0.86f)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null,
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        onTabSelected(tab)
+                                    },
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CompositionLocalProvider(
+                                LocalContentColor provides if (isSelected) Color.White else Color(0xFF8E8E94),
+                            ) {
+                                NavigationIconItem(tab)
                             }
                         }
                     }
@@ -353,5 +458,83 @@ object HomeScreen : Screen() {
             val toLibraryUpdateErrors: Boolean = false,
             // KMK <--
         ) : Tab
+    }
+}
+
+private val NavHighlightLead = spring<Float>(dampingRatio = 0.82f, stiffness = 700f)
+private val NavHighlightTrail = spring<Float>(dampingRatio = 0.82f, stiffness = 320f)
+private val NavHighlightInset = 8.dp
+private val NavHighlightGap = 4.dp
+
+@Composable
+internal fun Modifier.capsuleNavHighlight(selectedIndex: Int, tabCount: Int): Modifier {
+    val start = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
+    val end = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
+    val shown = remember { Animatable(if (selectedIndex >= 0) 1f else 0f) }
+
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex < 0) {
+            shown.animateTo(0f, tween(200))
+            return@LaunchedEffect
+        }
+        val target = selectedIndex.toFloat()
+        if (shown.value == 0f) {
+            start.snapTo(target)
+            end.snapTo(target)
+        }
+        launch { shown.animateTo(1f, tween(200)) }
+        val movingRight = target > (start.value + end.value) / 2f
+        launch { start.animateTo(target, if (movingRight) NavHighlightTrail else NavHighlightLead) }
+        end.animateTo(target, if (movingRight) NavHighlightLead else NavHighlightTrail)
+    }
+
+    return drawBehind {
+        val alpha = shown.value
+        if (alpha <= 0f || tabCount == 0) return@drawBehind
+        val slot = size.width / tabCount
+        val halfGap = NavHighlightGap.toPx() / 2f
+        val inset = NavHighlightInset.toPx()
+        val left = start.value * slot + halfGap
+        val right = (end.value + 1f) * slot - halfGap
+        val height = size.height - inset * 2f
+        drawRoundRect(
+            color = Color(0xFF282830),
+            topLeft = Offset(left, inset),
+            size = Size(right - left, height),
+            cornerRadius = CornerRadius(height / 2f),
+            alpha = alpha,
+        )
+    }
+}
+
+@Composable
+internal fun Modifier.pressBounce(
+    interactionSource: InteractionSource,
+    pressedScale: Float = 0.86f,
+): Modifier {
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(interactionSource, pressedScale) {
+        var pressed = 0
+        interactionSource.interactions.collect { interaction ->
+            when (interaction) {
+                is PressInteraction.Press -> {
+                    pressed++
+                    launch { scale.animateTo(pressedScale, spring(dampingRatio = 1f, stiffness = 1600f)) }
+                }
+                is PressInteraction.Release, is PressInteraction.Cancel -> {
+                    pressed = (pressed - 1).coerceAtLeast(0)
+                    if (pressed == 0) {
+                        launch {
+                            if (scale.value > pressedScale + 0.03f) scale.animateTo(pressedScale, tween(70))
+                            scale.animateTo(1f, spring(dampingRatio = 0.38f, stiffness = 520f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return graphicsLayer {
+        scaleX = scale.value
+        scaleY = scale.value
     }
 }

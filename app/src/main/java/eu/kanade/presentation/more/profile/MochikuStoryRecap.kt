@@ -258,7 +258,7 @@ fun MochikuStoryRecapDialog(
                             4 -> SlideCoverArtwork(data)
                             5 -> SlideMilestoneChapters(data)
                             6 -> SlideThermalReceipt(username, cardNumber, data)
-                            7 -> SlideConclusion(username, cardNumber, joinedDate, data.monthName, onDismissRequest)
+                            7 -> SlideConclusion(username, cardNumber, joinedDate, data.monthName, photoPath, onDismissRequest)
                         }
                     }
                 }
@@ -974,6 +974,7 @@ private fun SlideConclusion(
     cardNumber: String,
     joinedDate: String,
     monthName: String,
+    photoPath: String?,
     onFinish: () -> Unit,
 ) {
     Column(
@@ -1007,15 +1008,7 @@ private fun SlideConclusion(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF383840)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("🍡", fontSize = 28.sp)
-                    }
+                    StoryAvatar(photoPath = photoPath, size = 60)
 
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("PROFILE USR#$cardNumber", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF9E9E9E))
