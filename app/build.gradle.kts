@@ -28,8 +28,8 @@ android {
     defaultConfig {
         applicationId = "app.mochiku"
 
-        versionCode = 87
-        versionName = "1.14.6"
+        versionCode = 88
+        versionName = "1.14.7"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
@@ -47,6 +47,9 @@ android {
             isPseudoLocalesEnabled = true
         }
         val release by getting {
+            signingConfig = debug.signingConfig
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = ""
             isMinifyEnabled = Config.enableCodeShrink
             isShrinkResources = Config.enableCodeShrink
 
