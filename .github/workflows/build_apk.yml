@@ -84,12 +84,14 @@ jobs:
           tag_name: v1.0.0-preview
           name: Mochiku v1.0.0-preview
           body: |
-            ### 🍡 Mochiku (餅ク) v1.0.0 Preview
-            True Komikku Android Fork with Mochy-Music OLED dark theme and Manga Recap Gimmick.
+            ### 🍡 Mochiku (餅ク) v1.0.0 Preview - Community Fork of Komikku
+            Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
+            All core manga reading engines, extension support, manga sources, trackers, and library systems are credited to the incredible developers of Komikku and Tachiyomi. Mochiku provides:
             - **OLED Dark Theme**: `#000000` true black, neutral gray typography, zero colorful gradients.
+            - **Floating Capsule Navigation**: Minimalist capsule navigation bar inspired by Mochy-Music.
             - **Manga Recap Gimmick**: Monthly/Yearly range, Barcode unlock card, 24-Hour reading activity histogram, 7-Day weekly tempo.
-            - **100% Native Komikku Functions**: Extensions, Sources, Library categories, RTL/LTR/Webtoon readers, Trackers, Downloads.
+            - **100% Upstream Compatibility**: Extension sources, library backups, and trackers work identically to Komikku.
             
             ---
             ### 📱 Download Links (Choose for your phone):

@@ -8,7 +8,14 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-purple.svg?logo=kotlin)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg?logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
 
-**Mochiku (餅ク)** is a direct, full-featured fork of [Komikku](https://github.com/komikku-app/komikku) (based on TachiyomiSY & Mihon). It preserves **100% of Komikku's native functionality** (all extension sources, library categories, advanced readers, download queue, tracker sync, backups) while completely overhauling the UI to adopt the pure OLED dark aesthetic of [Mochy-Music](https://github.com/realidkroo/Mochy-Music) and introducing the **Manga Recap Gimmick & Otaku Passport**.
+**Mochiku (餅ク)** is an honest, open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (which is based on TachiyomiSY & Mihon).
+
+> [!IMPORTANT]
+> **📜 Honest Upstream Attribution & Code Provenance**  
+> We want to be 100% transparent: **Mochiku is a fork of Komikku**. We did not build the core manga engine from scratch.  
+> All underlying manga parsers, extension sandboxes, tracker synchronization (AniList/MAL), download managers, and reader rendering engines belong to the brilliant upstream developers and contributors of [Komikku](https://github.com/komikku-app/komikku), [TachiyomiSY](https://github.com/jobobby04/TachiyomiSY), and [Mihon](https://github.com/mihonapp/mihon).  
+> Mochiku's purpose is to provide a customized community edition featuring a pure OLED dark UI inspired by [Mochy-Music](https://github.com/realidkroo/Mochy-Music), a floating capsule navigation bar, and the interactive Manga Story Recap.  
+> Please star and support the upstream repository at **[github.com/komikku-app/komikku](https://github.com/komikku-app/komikku)**!
 
 </div>
 
