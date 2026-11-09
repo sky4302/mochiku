@@ -81,10 +81,10 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.11
-          name: Mochiku v1.14.11
+          tag_name: v1.14.12
+          name: Mochiku v1.14.12
           body: |
-            ### Mochiku (餅ク) v1.14.11 - Community Fork of Komikku
+            ### Mochiku (餅ク) v1.14.12 - Community Fork of Komikku
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
             All core manga reading engines, extension support, manga sources, trackers, and library systems are credited to the incredible developers of Komikku and Tachiyomi. Mochiku provides:

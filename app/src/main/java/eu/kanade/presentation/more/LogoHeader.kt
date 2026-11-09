@@ -59,15 +59,6 @@ fun LogoHeader() {
             letterSpacing = 0.5.sp,
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = "Fork of Komikku (Tachiyomi / Mihon)",
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-
         Spacer(modifier = Modifier.height(20.dp))
 
         HorizontalDivider(

@@ -104,35 +104,6 @@ class AboutScreen : Screen() {
                 }
 
                 item {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.45f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                text = "Honest Attribution · Fork of Komikku",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Text(
-                                text = "Mochiku is an open-source fork of Komikku (built upon Tachiyomi & Mihon). All core manga reading engines, extension loaders, parsers, and tracker integrations were built by the Komikku and Tachiyomi contributors.\n\nMochiku provides a custom Mochy-Music OLED dark UI, floating capsule navigation, and Manga Story Recap.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 18.sp,
-                            )
-                        }
-                    }
-                }
-
-                item {
                     TextPreferenceWidget(
                         title = stringResource(MR.strings.version),
                         subtitle = getVersionName(withBuildDate = true),
@@ -289,17 +260,12 @@ class AboutScreen : Screen() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         LinkIcon(
-                            label = "Mochiku",
+                            label = "GitHub",
                             icon = CustomIcons.Github,
                             url = "https://github.com/sky4302/mochiku",
-                        )
-                        LinkIcon(
-                            label = "Komikku (Upstream)",
-                            icon = CustomIcons.Github,
-                            url = "https://github.com/komikku-app/komikku",
                         )
                     }
                 }
