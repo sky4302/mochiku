@@ -35,7 +35,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug -Pinclude-telemetry=false -Penable-updater=false --stacktrace
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Prepare Output APK
         run: |
