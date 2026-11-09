@@ -66,29 +66,35 @@ internal class PermissionStep : OnboardingStep {
 
         val installGranted = rememberRequestPackageInstallsPermissionState()
 
+        val checkAllPermissions: () -> Unit = {
+            notificationGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+            batteryGranted = context.getSystemService<PowerManager>()
+                ?.isIgnoringBatteryOptimizations(context.packageName) == true
+            externalStoragePermissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) ==
+                    PackageManager.PERMISSION_GRANTED
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) ==
+                    PackageManager.PERMISSION_GRANTED
+            } else {
+                context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                    PackageManager.PERMISSION_GRANTED
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            checkAllPermissions()
+        }
+
         DisposableEffect(lifecycleOwner.lifecycle) {
             val observer = object : DefaultLifecycleObserver {
                 override fun onResume(owner: LifecycleOwner) {
-                    notificationGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-                            PackageManager.PERMISSION_GRANTED
-                    } else {
-                        true
-                    }
-                    batteryGranted = context.getSystemService<PowerManager>()!!
-                        .isIgnoringBatteryOptimizations(context.packageName)
-                    // KMK -->
-                    externalStoragePermissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        context.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) ==
-                            PackageManager.PERMISSION_GRANTED
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) ==
-                            PackageManager.PERMISSION_GRANTED
-                    } else {
-                        context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-                            PackageManager.PERMISSION_GRANTED
-                    }
-                    // KMK <--
+                    checkAllPermissions()
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
@@ -110,8 +116,9 @@ internal class PermissionStep : OnboardingStep {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val permissionRequester = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
-                    onResult = {
-                        // no-op. resulting checks is being done on resume
+                    onResult = { granted ->
+                        notificationGranted = granted
+                        checkAllPermissions()
                     },
                 )
                 PermissionCheckbox(
@@ -139,8 +146,9 @@ internal class PermissionStep : OnboardingStep {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val permissionRequester = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
-                    onResult = {
-                        // no-op. resulting checks is being done on resume
+                    onResult = { granted ->
+                        externalStoragePermissionGranted = granted
+                        checkAllPermissions()
                     },
                 )
                 PermissionCheckbox(
@@ -152,8 +160,9 @@ internal class PermissionStep : OnboardingStep {
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val permissionRequester = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
-                    onResult = {
-                        // no-op. resulting checks is being done on resume
+                    onResult = { granted ->
+                        externalStoragePermissionGranted = granted
+                        checkAllPermissions()
                     },
                 )
                 PermissionCheckbox(
@@ -165,8 +174,9 @@ internal class PermissionStep : OnboardingStep {
             } else {
                 val permissionRequester = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
-                    onResult = {
-                        // no-op. resulting checks is being done on resume
+                    onResult = { granted ->
+                        externalStoragePermissionGranted = granted
+                        checkAllPermissions()
                     },
                 )
                 PermissionCheckbox(

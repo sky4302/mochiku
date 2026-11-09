@@ -89,13 +89,16 @@ fun MochikuStoryRecapDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val dotColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        val onBackgroundColor = MaterialTheme.colorScheme.onBackground
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(backgroundColor)
                 .drawBehind {
                     // Mochy-style dot matrix grid
-                    val dotColor = Color(0xFF1B1B1E)
                     val spacing = 28.dp.toPx()
                     val radius = 1.2.dp.toPx()
                     var x = 0f
@@ -117,10 +120,10 @@ fun MochikuStoryRecapDialog(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(36.dp))
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
                         Text(
                             text = "Analyzing reading history...",
-                            color = Color(0xFF8E8E8E),
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp,
                         )
@@ -179,9 +182,9 @@ fun MochikuStoryRecapDialog(
                                     .clip(RoundedCornerShape(2.dp))
                                     .background(
                                         when {
-                                            i < currentSlide -> Color.White
-                                            i == currentSlide -> Color.White
-                                            else -> Color(0xFF333338)
+                                            i < currentSlide -> MaterialTheme.colorScheme.primary
+                                            i == currentSlide -> MaterialTheme.colorScheme.primary
+                                            else -> MaterialTheme.colorScheme.surfaceContainerHighest
                                         },
                                     ),
                             )
@@ -201,7 +204,7 @@ fun MochikuStoryRecapDialog(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.surfaceContainer,
                                 modifier = Modifier.size(24.dp),
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -213,7 +216,7 @@ fun MochikuStoryRecapDialog(
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFCCCCCC),
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
                             )
                         }
 
@@ -224,7 +227,7 @@ fun MochikuStoryRecapDialog(
                             Icon(
                                 imageVector = Icons.Outlined.Close,
                                 contentDescription = "Close",
-                                tint = Color.White,
+                                tint = onBackgroundColor,
                             )
                         }
                     }
@@ -323,7 +326,7 @@ private fun SlideJourney(
                 text = "$username you started your journey in Mochiku on",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFFCCCCCC),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
                 textAlign = TextAlign.Center,
             )
         }
@@ -333,7 +336,7 @@ private fun SlideJourney(
                 text = joinedDate,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
         }
@@ -343,7 +346,7 @@ private fun SlideJourney(
                 text = "and you have been reading manga for a total time of",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFFCCCCCC),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
                 textAlign = TextAlign.Center,
             )
         }
@@ -354,7 +357,7 @@ private fun SlideJourney(
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Black,
                 fontFamily = FontFamily.Monospace,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
             )
         }
@@ -367,7 +370,7 @@ private fun SlideJourney(
                     text = "so long, partners!",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF999999),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -418,7 +421,7 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
                 text = "$monthName is",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFE0E0E0),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
             )
         }
 
@@ -427,7 +430,7 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
                 text = "${animatedPercent.value.toInt()}%",
                 fontSize = 76.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -436,7 +439,7 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
                 text = "out of 100%",
                 fontSize = 16.sp,
                 fontFamily = FontFamily.Monospace,
-                color = Color(0xFF8E8E8E),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
         }
 
@@ -446,14 +449,14 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
                     .fillMaxWidth(0.85f)
                     .height(26.dp)
                     .clip(RoundedCornerShape(13.dp))
-                    .background(Color(0xFF222228)),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(animatedBar.value.coerceIn(0.01f, 1f))
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(13.dp))
-                        .background(Color(0xFF52FF7A)),
+                        .background(MaterialTheme.colorScheme.primary),
                 )
             }
         }
@@ -500,21 +503,23 @@ private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData)
             }
 
             PptxBuildIn(index = 2) {
-                Text(
-                    text = if (data.topAuthor != null) "this author.." else "this series..",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFAAAAAA),
-                )
-                if (data.topAuthor != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = data.topAuthor,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF52FF7A),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        text = if (data.topAuthor != null) "this author.." else "this series..",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
                     )
+                    if (data.topAuthor != null) {
+                        Text(
+                            text = data.topAuthor,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -588,7 +593,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                 text = "Recognize this manga?",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
         }
@@ -598,7 +603,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                 text = if (hero != null) "that's your favorite this month!" else "read a chapter to crown your favorite!",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF9E9E9E),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
             )
         }
@@ -611,8 +616,8 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                     modifier = Modifier
                         .size(136.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1B1B22))
-                        .border(3.dp, Color.White, CircleShape),
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (hero?.cover != null) {
@@ -630,7 +635,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                 if (hero != null) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .graphicsLayer {
@@ -643,7 +648,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Black,
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
@@ -658,7 +663,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                 text = hero?.title ?: "No Manga Read Yet",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -723,7 +728,7 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
                             fontSize = 13.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                         )
                     }
                 }
@@ -735,7 +740,7 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
                 text = hero?.title ?: "Every panel, every story, devoured.",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -769,7 +774,7 @@ private fun SlideMilestoneChapters(data: MochikuRecapData) {
                 text = "${countAnim.value.toInt()} Chapters!",
                 fontSize = 46.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
         }
@@ -779,7 +784,7 @@ private fun SlideMilestoneChapters(data: MochikuRecapData) {
                 text = if (chapters > 0) "Your reading feat this month!!!" else "Ready for your next chapter!",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFE0E0E0),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
             )
         }
@@ -790,8 +795,8 @@ private fun SlideMilestoneChapters(data: MochikuRecapData) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(Color(0xFF141418))
-                    .border(1.dp, Color(0xFF2C2C36), RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
                     .padding(horizontal = 20.dp, vertical = 8.dp),
             ) {
                 Text(
@@ -799,7 +804,7 @@ private fun SlideMilestoneChapters(data: MochikuRecapData) {
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF52FF7A),
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -987,7 +992,7 @@ private fun SlideConclusion(
                 text = "There you go",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -995,8 +1000,8 @@ private fun SlideConclusion(
         PptxBuildIn(index = 1) {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = Color(0xFF242428),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF383842)),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
                     .height(130.dp),
@@ -1011,9 +1016,9 @@ private fun SlideConclusion(
                     StoryAvatar(photoPath = photoPath, size = 60)
 
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("PROFILE USR#$cardNumber", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF9E9E9E))
-                        Text(username, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("joined at $joinedDate", fontSize = 9.sp, color = Color(0xFFCCCCCC))
+                        Text("PROFILE USR#$cardNumber", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(username, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("joined at $joinedDate", fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -1026,7 +1031,7 @@ private fun SlideConclusion(
                 text = "That's your $monthName recap!",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
         }
@@ -1037,7 +1042,7 @@ private fun SlideConclusion(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.primary)
                     .clickable(onClick = onFinish)
                     .padding(horizontal = 28.dp, vertical = 12.dp),
             ) {
@@ -1046,7 +1051,7 @@ private fun SlideConclusion(
                     fontSize = 13.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Black,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         }

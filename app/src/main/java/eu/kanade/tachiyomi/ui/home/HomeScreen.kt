@@ -251,6 +251,13 @@ object HomeScreen : Screen() {
         onTabSelected: (eu.kanade.presentation.util.Tab) -> Unit,
     ) {
         val haptic = LocalHapticFeedback.current
+        val colorScheme = MaterialTheme.colorScheme
+        val containerColor = colorScheme.surfaceContainer
+        val borderColor = colorScheme.outlineVariant.copy(alpha = 0.45f)
+        val highlightColor = colorScheme.secondaryContainer
+        val activeContentColor = colorScheme.onSecondaryContainer
+        val inactiveContentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -263,21 +270,25 @@ object HomeScreen : Screen() {
                     .fillMaxWidth()
                     .height(64.dp)
                     .shadow(
-                        elevation = 12.dp,
+                        elevation = 8.dp,
                         shape = RoundedCornerShape(50),
-                        spotColor = Color.Black.copy(alpha = 0.6f),
-                        ambientColor = Color.Black.copy(alpha = 0.4f),
+                        spotColor = colorScheme.scrim.copy(alpha = 0.25f),
+                        ambientColor = colorScheme.scrim.copy(alpha = 0.15f),
                     ),
                 shape = RoundedCornerShape(50),
-                color = Color(0xFF141416),
-                border = BorderStroke(1.dp, Color(0xFF26262E)),
+                color = containerColor,
+                border = BorderStroke(1.dp, borderColor),
                 tonalElevation = 0.dp,
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 6.dp)
-                        .capsuleNavHighlight(selectedIndex = selectedIndex, tabCount = tabs.size),
+                        .capsuleNavHighlight(
+                            selectedIndex = selectedIndex,
+                            tabCount = tabs.size,
+                            highlightColor = highlightColor,
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     tabs.fastForEachIndexed { index, tab ->
@@ -301,7 +312,7 @@ object HomeScreen : Screen() {
                             contentAlignment = Alignment.Center,
                         ) {
                             CompositionLocalProvider(
-                                LocalContentColor provides if (isSelected) Color.White else Color(0xFF8E8E94),
+                                LocalContentColor provides if (isSelected) activeContentColor else inactiveContentColor,
                             ) {
                                 NavigationIconItem(tab)
                             }
@@ -467,7 +478,11 @@ private val NavHighlightInset = 8.dp
 private val NavHighlightGap = 4.dp
 
 @Composable
-internal fun Modifier.capsuleNavHighlight(selectedIndex: Int, tabCount: Int): Modifier {
+internal fun Modifier.capsuleNavHighlight(
+    selectedIndex: Int,
+    tabCount: Int,
+    highlightColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+): Modifier {
     val start = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
     val end = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
     val shown = remember { Animatable(if (selectedIndex >= 0) 1f else 0f) }
@@ -498,7 +513,7 @@ internal fun Modifier.capsuleNavHighlight(selectedIndex: Int, tabCount: Int): Mo
         val right = (end.value + 1f) * slot - halfGap
         val height = size.height - inset * 2f
         drawRoundRect(
-            color = Color(0xFF282830),
+            color = highlightColor,
             topLeft = Offset(left, inset),
             size = Size(right - left, height),
             cornerRadius = CornerRadius(height / 2f),

@@ -111,7 +111,7 @@ fun MochikuRecapSection(
                 Text(
                     text = "Adapted from Mochy-Music · 100% On-Device",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF8E8E8E),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = FontFamily.Monospace,
                 )
             }
@@ -120,14 +120,14 @@ fun MochikuRecapSection(
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(Color(0xFF141416))
-                    .border(1.dp, Color(0xFF26262A), RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(50))
                     .padding(2.dp),
             ) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(if (rangeMode == "Month") Color.White else Color.Transparent)
+                        .background(if (rangeMode == "Month") MaterialTheme.colorScheme.primary else Color.Transparent)
                         .clickable { rangeMode = "Month" }
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                 ) {
@@ -135,14 +135,14 @@ fun MochikuRecapSection(
                         text = "Month",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (rangeMode == "Month") Color.Black else Color(0xFF8E8E8E),
+                        color = if (rangeMode == "Month") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(if (rangeMode == "Year") Color.White else Color.Transparent)
+                        .background(if (rangeMode == "Year") MaterialTheme.colorScheme.primary else Color.Transparent)
                         .clickable { rangeMode = "Year" }
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                 ) {
@@ -150,7 +150,7 @@ fun MochikuRecapSection(
                         text = "Year",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (rangeMode == "Year") Color.Black else Color(0xFF8E8E8E),
+                        color = if (rangeMode == "Year") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -170,8 +170,8 @@ fun MochikuRecapSection(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF101014)),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF222228)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -187,7 +187,7 @@ fun MochikuRecapSection(
                             text = if (rangeMode == "Month") "Monthly Rewind Verification" else "Annual Rewind Verification",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
@@ -197,7 +197,7 @@ fun MochikuRecapSection(
                                 "Read at least $minChaptersRequired chapters this month to unlock full story ($effectiveChapters / $minChaptersRequired completed)."
                             },
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF8E8E8E),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -209,8 +209,8 @@ fun MochikuRecapSection(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(50)),
-                    color = if (isUnlocked) Color(0xFF52FF7A) else Color.White,
-                    trackColor = Color(0xFF222228),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 )
 
                 // Action Buttons
@@ -222,8 +222,8 @@ fun MochikuRecapSection(
                         onClick = { showStoryDialog = true },
                         modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
                         ),
                         shape = RoundedCornerShape(12.dp),
                     ) {
@@ -239,8 +239,8 @@ fun MochikuRecapSection(
                     OutlinedButton(
                         onClick = { showReceiptDialog = true },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF33333C)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
@@ -255,8 +255,8 @@ fun MochikuRecapSection(
                     OutlinedButton(
                         onClick = { showEditProfileDialog = true },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF33333C)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
@@ -275,8 +275,8 @@ fun MochikuRecapSection(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF101014)),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF222228)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -290,14 +290,14 @@ fun MochikuRecapSection(
                     Text(
                         text = "24-Hour Reading Tempo",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 13.sp,
                     )
                     Text(
                         text = "Peak: 22:00 - 01:00",
                         fontSize = 10.sp,
                         fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF8E8E8E),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -320,7 +320,7 @@ fun MochikuRecapSection(
                                 .weight(1f)
                                 .height((value * 0.45).dp)
                                 .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
-                                .background(if (isPeak) Color(0xFF52FF7A) else Color(0xFF2C2C34)),
+                                .background(if (isPeak) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest),
                         )
                     }
                 }
@@ -329,11 +329,11 @@ fun MochikuRecapSection(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("00:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF666666))
-                    Text("06:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF666666))
-                    Text("12:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF666666))
-                    Text("18:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF666666))
-                    Text("23:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF666666))
+                    Text("00:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("06:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("12:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("18:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("23:00", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

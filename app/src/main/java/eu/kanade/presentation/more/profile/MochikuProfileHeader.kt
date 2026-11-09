@@ -85,12 +85,12 @@ fun MochikuProfileHeader(
                     text = "Hello again, $username!",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = "Mochiku Manga Profile",
                     fontSize = 12.sp,
-                    color = Color(0xFF8E8E8E),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = FontFamily.Monospace,
                 )
             }
@@ -98,8 +98,8 @@ fun MochikuProfileHeader(
             OutlinedButton(
                 onClick = { showEditProfileDialog = true },
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF33333C)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp),
             ) {
                 Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
@@ -121,8 +121,8 @@ fun MochikuProfileHeader(
         // Reading Time Card (Matches Mochy: "2h 9m Total Listening time | View Stats >")
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = Color(0xFF141416),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF26262C)),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClickStats),
@@ -141,7 +141,7 @@ fun MochikuProfileHeader(
                     Icon(
                         imageVector = Icons.Outlined.QueryStats,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                     )
 
@@ -151,12 +151,12 @@ fun MochikuProfileHeader(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.Monospace,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = "This Month · $displayChapters ch read",
                             fontSize = 11.sp,
-                            color = Color(0xFF8E8E8E),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -169,12 +169,12 @@ fun MochikuProfileHeader(
                         text = "View Stats",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
                         contentDescription = null,
-                        tint = Color(0xFF8E8E8E),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp),
                     )
                 }
@@ -182,7 +182,7 @@ fun MochikuProfileHeader(
         }
 
         HorizontalDivider(
-            color = Color(0xFF1E1E24),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
             thickness = 1.dp,
             modifier = Modifier.padding(top = 4.dp),
         )
