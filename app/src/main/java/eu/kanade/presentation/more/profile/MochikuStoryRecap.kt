@@ -28,10 +28,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.CollectionsBookmark
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.ui.res.painterResource
+import eu.kanade.tachiyomi.R
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -209,7 +216,11 @@ fun MochikuStoryRecapDialog(
                                 modifier = Modifier.size(24.dp),
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("🍡", fontSize = 13.sp)
+                                    Image(
+                                        painter = painterResource(R.mipmap.ic_launcher),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
                                 }
                             }
                             Text(
@@ -465,7 +476,7 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
         PptxBuildIn(index = 4) {
             Text(
                 text = if (monthChaptersRead > 0) {
-                    "$monthChaptersRead chapters read this month 📖"
+                    "$monthChaptersRead chapters read this month"
                 } else {
                     "0 chapters read so far in $monthName"
                 },
@@ -556,7 +567,12 @@ private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData)
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {
-                                Text("📖", fontSize = 30.sp)
+                                Icon(
+                                    imageVector = Icons.Outlined.Book,
+                                    contentDescription = null,
+                                    tint = Color(0xFF8E8E93),
+                                    modifier = Modifier.size(28.dp),
+                                )
                             }
                         }
                     }
@@ -571,7 +587,12 @@ private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData)
                             .border(2.dp, Color(0xFF444450), CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("📚", fontSize = 32.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.CollectionsBookmark,
+                            contentDescription = null,
+                            tint = Color(0xFF8E8E93),
+                            modifier = Modifier.size(30.dp),
+                        )
                     }
                 }
             }
@@ -629,7 +650,12 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {
-                        Text("📚", fontSize = 56.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.AutoStories,
+                            contentDescription = null,
+                            tint = Color(0xFF8E8E93),
+                            modifier = Modifier.size(56.dp),
+                        )
                     }
                 }
 
@@ -722,8 +748,12 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🍙", fontSize = 64.sp)
-                        Spacer(Modifier.height(6.dp))
+                        Image(
+                            painter = painterResource(R.mipmap.ic_launcher),
+                            contentDescription = "Mochiku Logo",
+                            modifier = Modifier.size(64.dp),
+                        )
+                        Spacer(Modifier.height(8.dp))
                         Text(
                             text = "Mochiku Manga",
                             fontSize = 13.sp,
@@ -1077,7 +1107,12 @@ private fun StoryAvatar(photoPath: String?, size: Int) {
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            Text("🍡", fontSize = (size * 0.45).sp)
+            Icon(
+                imageVector = Icons.Outlined.Person,
+                contentDescription = null,
+                tint = Color(0xFFC0C0C4),
+                modifier = Modifier.size((size * 0.55).dp),
+            )
         }
     }
 }

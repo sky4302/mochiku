@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -226,7 +227,12 @@ private fun IdCardFront(
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {
-                        Text("🍡", fontSize = 34.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = "Profile Picture",
+                            tint = Color(0xFFC0C0C4),
+                            modifier = Modifier.size(34.dp),
+                        )
                     }
                 }
 
