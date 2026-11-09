@@ -337,36 +337,11 @@ class AboutScreen : Screen() {
         // KMK <--
 
         fun getVersionName(withBuildDate: Boolean): String {
-            return when {
-                isDebugBuildType -> {
-                    "Debug ${BuildConfig.COMMIT_SHA}".let {
-                        if (withBuildDate) {
-                            "$it (${getFormattedBuildTime()})"
-                        } else {
-                            it
-                        }
-                    }
-                }
-
-                isPreviewBuildType -> {
-                    "Beta r${BuildConfig.COMMIT_COUNT}".let {
-                        if (withBuildDate) {
-                            "$it (${BuildConfig.COMMIT_SHA}, ${getFormattedBuildTime()})"
-                        } else {
-                            "$it (${BuildConfig.COMMIT_SHA})"
-                        }
-                    }
-                }
-
-                else -> {
-                    "Stable ${BuildConfig.VERSION_NAME}".let {
-                        if (withBuildDate) {
-                            "$it (${getFormattedBuildTime()})"
-                        } else {
-                            it
-                        }
-                    }
-                }
+            val base = "v${BuildConfig.VERSION_NAME}"
+            return if (withBuildDate) {
+                "$base • Build ${BuildConfig.VERSION_CODE} (${getFormattedBuildTime()})"
+            } else {
+                base
             }
         }
 
