@@ -231,7 +231,11 @@ class PagerPageHolder(
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
-                setError(e)
+                if (e is java.io.FileNotFoundException) {
+                    page.chapter.pageLoader?.retryPage(page)
+                } else {
+                    setError(e)
+                }
             }
         }
     }

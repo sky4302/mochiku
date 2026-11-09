@@ -78,12 +78,28 @@ class ChapterCache(
     // --> EH
     // Cache size is in MB
     private fun setupDiskCache(cacheSize: Long): DiskLruCache {
-        return DiskLruCache.open(
-            File(context.cacheDir, "chapter_disk_cache"),
-            PARAMETER_APP_VERSION,
-            PARAMETER_VALUE_COUNT,
-            cacheSize * 1024 * 1024,
-        )
+        val dir = File(context.cacheDir, "chapter_disk_cache")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return try {
+            DiskLruCache.open(
+                dir,
+                PARAMETER_APP_VERSION,
+                PARAMETER_VALUE_COUNT,
+                cacheSize * 1024 * 1024,
+            )
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e) { "Failed to open DiskLruCache, recreating directory" }
+            dir.deleteRecursively()
+            dir.mkdirs()
+            DiskLruCache.open(
+                dir,
+                PARAMETER_APP_VERSION,
+                PARAMETER_VALUE_COUNT,
+                cacheSize * 1024 * 1024,
+            )
+        }
     }
     // <-- EH
 
@@ -139,17 +155,47 @@ class ChapterCache(
     }
 
     /**
-     * Returns true if image is in cache.
+     * Returns true if image is in cache and physically exists on disk.
      *
      * @param imageUrl url of image.
      * @return true if in cache otherwise false.
      */
     fun isImageInCache(imageUrl: String): Boolean {
         return try {
-            diskCache.get(DiskUtil.hashKeyForDisk(imageUrl)).use { it != null }
+            val key = DiskUtil.hashKeyForDisk(imageUrl)
+            val file = getImageFile(imageUrl)
+            if (!file.exists() || file.length() == 0L) {
+                try {
+                    diskCache.remove(key)
+                } catch (_: Exception) {}
+                false
+            } else {
+                diskCache.get(key).use { it != null }
+            }
         } catch (_: IOException) {
             false
         }
+    }
+
+    /**
+     * Remove image from cache by imageUrl.
+     */
+    fun removeImageFromCache(imageUrl: String): Boolean {
+        return try {
+            val key = DiskUtil.hashKeyForDisk(imageUrl)
+            val file = getImageFile(imageUrl)
+            if (file.exists()) {
+                file.delete()
+            }
+            diskCache.remove(key)
+        } catch (e: Exception) {
+            logcat(LogPriority.WARN, e) { "Failed to remove image from cache" }
+            false
+        }
+    }
+
+    fun removeFile(file: File): Boolean {
+        return removeFileFromCache(file.name)
     }
 
     /**
@@ -179,13 +225,28 @@ class ChapterCache(
         try {
             // Get editor from md5 key.
             val key = DiskUtil.hashKeyForDisk(imageUrl)
-            editor = diskCache.edit(key) ?: return
+            editor = diskCache.edit(key)
+            if (editor == null) {
+                try {
+                    diskCache.remove(key)
+                } catch (_: Exception) {}
+                editor = diskCache.edit(key)
+            }
+            if (editor == null) {
+                throw IOException("Unable to open cache editor for: $key")
+            }
 
             // Get OutputStream and write image with Okio.
             response.body.source().saveTo(editor.newOutputStream(0))
 
             diskCache.flush()
             editor.commit()
+
+            // Verify file exists and is not empty on disk
+            val file = getImageFile(imageUrl)
+            if (!file.exists() || file.length() == 0L) {
+                throw IOException("Cache verification failed for: $key")
+            }
         } finally {
             response.body.close()
             editor?.abortUnlessCommitted()

@@ -216,7 +216,11 @@ class WebtoonPageHolder(
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
-                setError(e)
+                if (e is java.io.FileNotFoundException) {
+                    page?.let { it.chapter.pageLoader?.retryPage(it) } ?: setError(e)
+                } else {
+                    setError(e)
+                }
             }
         }
     }

@@ -25,6 +25,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
 import java.util.concurrent.PriorityBlockingQueue
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -144,6 +145,7 @@ internal class HttpPageLoader(
      * Retries a page. This method is only called from user interaction on the viewer.
      */
     override fun retryPage(page: ReaderPage) {
+        page.imageUrl?.let { chapterCache.removeImageFromCache(it) }
         if (page.status is Page.State.Error) {
             page.status = Page.State.Queue
         }
@@ -223,7 +225,21 @@ internal class HttpPageLoader(
                 chapterCache.putImageToCache(imageUrl, imageResponse)
             }
 
-            page.stream = { chapterCache.getImageFile(imageUrl).inputStream() }
+            // Verify the physical file is present and not empty on disk
+            val file = chapterCache.getImageFile(imageUrl)
+            if (!file.exists() || file.length() == 0L) {
+                chapterCache.removeImageFromCache(imageUrl)
+                throw IOException("Cache verification failed for: ${file.absolutePath}")
+            }
+
+            page.stream = {
+                val f = chapterCache.getImageFile(imageUrl)
+                if (!f.exists() || f.length() == 0L) {
+                    chapterCache.removeImageFromCache(imageUrl)
+                    throw IOException("Cache file missing: ${f.absolutePath}")
+                }
+                f.inputStream()
+            }
             page.status = Page.State.Ready
         } catch (e: Throwable) {
             page.status = Page.State.Error(e)

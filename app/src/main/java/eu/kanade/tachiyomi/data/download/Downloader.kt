@@ -568,7 +568,7 @@ class Downloader(
         }
         val extension = ImageUtil.findImageType(cacheFile.inputStream()) ?: return tmpFile
         tmpFile.renameTo("$filename.${extension.extension}")
-        cacheFile.delete()
+        chapterCache.removeFile(cacheFile)
         return tmpFile
     }
 
