@@ -160,7 +160,7 @@ object HomeScreen : Screen() {
                                 enter = expandVertically(),
                                 exit = shrinkVertically(),
                             ) {
-                                val enabledTabs = remember(TABS) { TABS.fastFilter { it.isEnabled() } }
+                                val enabledTabs = TABS.fastFilter { it.isEnabled() }
                                 val selectedIndex = enabledTabs.indexOfFirst { it::class == tabNavigator.current::class }
                                 MochikuCapsuleBottomBar(
                                     tabs = enabledTabs,
