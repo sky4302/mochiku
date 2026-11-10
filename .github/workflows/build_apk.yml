@@ -81,18 +81,17 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.12
-          name: Mochiku v1.14.12
+          tag_name: v1.14.13
+          name: Mochiku v1.14.13
           body: |
-            ### Mochiku (餅ク) v1.14.12 - Community Fork of Komikku
+            ### Mochiku (餅ク) v1.14.13 - Dynamic Theming & Light Theme Legibility
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            All core manga reading engines, extension support, manga sources, trackers, and library systems are credited to the incredible developers of Komikku and Tachiyomi. Mochiku provides:
-            - **In-App Updater Enabled**: Directly check for updates and install new builds inside the app.
-            - **OLED Dark Theme**: `#000000` true black, neutral gray typography, zero colorful gradients.
-            - **Floating Capsule Navigation**: Minimalist capsule navigation bar inspired by Mochy-Music.
-            - **Manga Recap Gimmick**: Monthly/Yearly range, Barcode unlock card, 24-Hour reading activity histogram, 7-Day weekly tempo.
-            - **100% Upstream Compatibility**: Extension sources, library backups, and trackers work identically to Komikku.
+            **What's New in v1.14.13:**
+            - **Theme-Adaptive Profile ID Card**: The ID Card now dynamically adapts to all app themes (Sakura, Lavender, Peach, Teal, Material You) in both Light and Dark modes.
+            - **Light Mode Recap Legibility Fix**: Fixed invisible white-on-white text in Story Recap slides (`"Again and again"`, `"Let's see your bill"`, chapters read subtitle, etc.) so all slides are high contrast and crystal clear in Light Theme.
+            - **Thermal Receipt Edge Border**: Added subtle edge border definition to the vintage thermal receipt so it stands out cleanly against pure white backgrounds.
+            - **In-App Updater Enabled**: Directly check for updates and update inside the app.
             
             ---
             ### Download Links (Choose for your phone):

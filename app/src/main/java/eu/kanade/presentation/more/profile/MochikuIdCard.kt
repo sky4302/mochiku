@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -116,8 +117,8 @@ fun MochikuIdCard(
                 cameraDistance = 14f * density.density
             }
             .clip(RoundedCornerShape(22.dp))
-            .background(Color(0xFF262628))
-            .border(1.dp, Color(0xFF38383C), RoundedCornerShape(22.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(22.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -191,7 +192,7 @@ private fun IdCardFront(
             ) {
                 Text(
                     text = "PROFILE USR#$cardNumber",
-                    color = Color(0xFFB5B5B5),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.5.sp,
                     maxLines = 1,
@@ -199,7 +200,7 @@ private fun IdCardFront(
                 Icon(
                     imageVector = Icons.Outlined.Edit,
                     contentDescription = "Edit Profile",
-                    tint = Color(0xFF888888),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(11.dp),
                 )
             }
@@ -214,8 +215,8 @@ private fun IdCardFront(
                     modifier = Modifier
                         .size(76.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF424246))
-                        .border(1.5.dp, Color(0xFF585860), CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
                         .clickable(onClick = onEditProfileClick),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -230,7 +231,7 @@ private fun IdCardFront(
                         Icon(
                             imageVector = Icons.Outlined.Person,
                             contentDescription = "Profile Picture",
-                            tint = Color(0xFFC0C0C4),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(34.dp),
                         )
                     }
@@ -242,7 +243,7 @@ private fun IdCardFront(
                 ) {
                     Text(
                         text = "ID CARD OF",
-                        color = Color(0xFF9E9E9E),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 9.sp,
                     )
@@ -254,7 +255,7 @@ private fun IdCardFront(
                     ) {
                         Text(
                             text = username,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -263,14 +264,14 @@ private fun IdCardFront(
                         Icon(
                             imageVector = Icons.Outlined.Edit,
                             contentDescription = "Edit Name",
-                            tint = Color(0xFFAAAAAA),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(13.dp),
                         )
                     }
 
                     Text(
                         text = "joined at $joinedDate",
-                        color = Color(0xFFB0B0B0),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -285,7 +286,7 @@ private fun IdCardFront(
             ) {
                 Text(
                     text = "TAP CARD TO FLIP >",
-                    color = Color(0xFF6E6E78),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     fontSize = 9.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -311,6 +312,7 @@ private fun IdCardBack(
     val barcodeBits = remember(cardNumber) {
         Code128Encoder.encode("MFY2026-11 $cardNumber")
     }
+    val barcodeBarColor = MaterialTheme.colorScheme.onSurface
 
     Row(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -331,7 +333,8 @@ private fun IdCardBack(
                         .fillMaxWidth(0.92f)
                         .height(82.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF161618))
+                        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
                         .padding(8.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -341,6 +344,7 @@ private fun IdCardBack(
                             isVerified = isVerified,
                             isScanning = isScanning,
                             scanProgress = scanProgress,
+                            barColor = barcodeBarColor,
                         )
                     }
 
@@ -384,7 +388,7 @@ private fun IdCardBack(
 
                 Text(
                     text = "MFY 2026 - 11  ${cardNumber.takeLast(8).chunked(4).joinToString(" ")}",
-                    color = if (isVerified) Color(0xFF52FF7A) else Color(0xFFB5B5B5),
+                    color = if (isVerified) Color(0xFF52FF7A) else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -394,7 +398,7 @@ private fun IdCardBack(
 
                 Text(
                     text = if (isVerified) "OPENING RECAP..." else if (isScanning) "SCANNING BARCODE..." else "TAP TO SCAN & UNLOCK RECAP",
-                    color = if (isVerified || isScanning) Color(0xFF52FF7A) else Color(0xFF7E7E88),
+                    color = if (isVerified || isScanning) Color(0xFF52FF7A) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                     fontSize = 9.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.ExtraBold,
@@ -413,17 +417,17 @@ private fun MarqueeRibbon(text: String) {
         modifier = Modifier
             .width(36.dp)
             .fillMaxHeight()
-            .background(Color(0xFF1A1A1C))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .border(
                 width = 1.dp,
-                color = Color(0xFF28282C),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(topEnd = 22.dp, bottomEnd = 22.dp),
             ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "• $text • $text • ",
-            color = Color(0xFF888888),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 9.5.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -441,10 +445,11 @@ private fun DrawScope.drawBarcodePattern(
     isVerified: Boolean,
     isScanning: Boolean,
     scanProgress: Float,
+    barColor: Color,
 ) {
     if (bits.isEmpty()) return
     val barWidth = size.width / bits.size
-    val activeColor = if (isVerified) Color(0xFF52FF7A) else Color.White
+    val activeColor = if (isVerified) Color(0xFF52FF7A) else barColor
 
     // Draw base barcode
     for (i in bits.indices) {

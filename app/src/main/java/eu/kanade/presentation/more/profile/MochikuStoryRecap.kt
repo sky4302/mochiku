@@ -390,7 +390,7 @@ private fun SlideJourney(
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF666666),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 )
             }
         }
@@ -482,7 +482,7 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
                 },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
     }
@@ -510,7 +510,7 @@ private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData)
                     fontSize = 42.sp,
                     lineHeight = 46.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
             }
 
@@ -555,8 +555,8 @@ private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData)
                             modifier = Modifier
                                 .size(74.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF1E1E24))
-                                .border(2.dp, Color(0xFF444450), CircleShape),
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             if (item.cover != null) {
@@ -570,7 +570,7 @@ private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData)
                                 Icon(
                                     imageVector = Icons.Outlined.Book,
                                     contentDescription = null,
-                                    tint = Color(0xFF8E8E93),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(28.dp),
                                 )
                             }
@@ -583,14 +583,14 @@ private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData)
                         modifier = Modifier
                             .size(74.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF1E1E24))
-                            .border(2.dp, Color(0xFF444450), CircleShape),
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.CollectionsBookmark,
                             contentDescription = null,
-                            tint = Color(0xFF8E8E93),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(30.dp),
                         )
                     }
@@ -653,7 +653,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                         Icon(
                             imageVector = Icons.Outlined.AutoStories,
                             contentDescription = null,
-                            tint = Color(0xFF8E8E93),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(56.dp),
                         )
                     }
@@ -726,7 +726,7 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
                 text = "Turn the page..",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -735,8 +735,8 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
                 modifier = Modifier
                     .size(190.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF16161C))
-                    .border(2.dp, Color(0xFF32323E), RoundedCornerShape(24.dp)),
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 if (hero?.cover != null) {
@@ -869,7 +869,7 @@ private fun SlideThermalReceipt(
                 text = "Let's see your bill",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
         }
@@ -899,6 +899,7 @@ private fun SlideThermalReceipt(
                         close()
                     }
                     drawPath(path, color = Color(0xFFF6F6F4))
+                    drawPath(path, color = Color(0x2B000000), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
                 }
                 .padding(start = 18.dp, end = 18.dp, top = 20.dp, bottom = 28.dp),
         ) {
@@ -1095,8 +1096,8 @@ private fun StoryAvatar(photoPath: String?, size: Int) {
         modifier = Modifier
             .size(size.dp)
             .clip(CircleShape)
-            .background(Color(0xFF222228))
-            .border(2.dp, Color(0xFF444450), CircleShape),
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         if (photoPath != null) {
@@ -1110,7 +1111,7 @@ private fun StoryAvatar(photoPath: String?, size: Int) {
             Icon(
                 imageVector = Icons.Outlined.Person,
                 contentDescription = null,
-                tint = Color(0xFFC0C0C4),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size((size * 0.55).dp),
             )
         }
