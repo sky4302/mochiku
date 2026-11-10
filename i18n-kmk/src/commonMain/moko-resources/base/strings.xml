@@ -247,4 +247,10 @@
     <string name="recap_share_loading_images">Loading images…</string>
     <string name="recap_share_failed">Failed to export recap image</string>
     <string name="action_share_recap">Share</string>
+    <!-- Mochiku Continue Reading Bar -->
+    <string name="pref_show_continue_reading_bar">Show continue-reading bar</string>
+    <string name="pref_show_continue_reading_bar_summary">Show a floating bar above navigation to quickly resume reading</string>
+    <string name="continue_reading_chapter_page">Ch. %1$s · Page %2$d</string>
+    <string name="continue_reading_chapter_name_page">%1$s · Page %2$d</string>
+    <string name="action_resume_reading">Resume reading</string>
 </resources>

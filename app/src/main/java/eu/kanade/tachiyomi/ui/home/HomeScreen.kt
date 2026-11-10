@@ -17,6 +17,7 @@ import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -43,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,6 +66,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -79,6 +83,7 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.presentation.home.ContinueReadingBar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.ui.browse.BrowseTab
@@ -88,6 +93,7 @@ import eu.kanade.tachiyomi.ui.library.LibraryTab
 import eu.kanade.tachiyomi.ui.libraryUpdateError.LibraryUpdateErrorScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.more.MoreTab
+import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
@@ -96,6 +102,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import soup.compose.material.motion.animation.materialFadeThroughIn
 import soup.compose.material.motion.animation.materialFadeThroughOut
+import tachiyomi.domain.history.model.ContinueReadingItem
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.NavigationBar
@@ -131,6 +138,11 @@ object HomeScreen : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        // KMK -->
+        val context = LocalContext.current
+        val continueReadingScreenModel = rememberScreenModel { ContinueReadingBarScreenModel() }
+        val continueReadingState by continueReadingScreenModel.state.collectAsState()
+        // KMK <--
 
         // SY -->
         val scope = rememberCoroutineScope()
@@ -160,6 +172,18 @@ object HomeScreen : Screen() {
                         }
                     },
                     bottomBar = {
+                        // KMK -->
+                        val showContinueReading = tabNavigator.current::class != HistoryTab::class &&
+                            tabNavigator.current::class != MoreTab::class
+                        val onOpenContinueManga: (ContinueReadingItem) -> Unit = { item ->
+                            navigator.push(MangaScreen(item.mangaId))
+                        }
+                        val onResumeContinueChapter: (ContinueReadingItem) -> Unit = { item ->
+                            context.startActivity(
+                                ReaderActivity.newIntent(context, item.mangaId, item.chapter.id),
+                            )
+                        }
+                        // KMK <--
                         if (!isTabletUi()) {
                             val bottomNavVisible by produceState(initialValue = true) {
                                 showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
@@ -171,18 +195,49 @@ object HomeScreen : Screen() {
                             ) {
                                 val enabledTabs = TABS.fastFilter { it.isEnabled() }
                                 val selectedIndex = enabledTabs.indexOfFirst { it::class == tabNavigator.current::class }
-                                MochikuCapsuleBottomBar(
-                                    tabs = enabledTabs,
-                                    selectedIndex = selectedIndex,
-                                    onTabSelected = { tab ->
-                                        if (tabNavigator.current::class != tab::class) {
-                                            tabNavigator.current = tab
-                                        } else {
-                                            scope.launch { tab.onReselect(navigator) }
-                                        }
-                                    },
-                                )
+                                Column {
+                                    // KMK -->
+                                    ContinueReadingBar(
+                                        state = continueReadingState,
+                                        visible = showContinueReading,
+                                        onBarClick = onOpenContinueManga,
+                                        onResumeClick = onResumeContinueChapter,
+                                        onDismiss = continueReadingScreenModel::dismiss,
+                                        modifier = Modifier.windowInsetsPadding(
+                                            WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal),
+                                        ),
+                                    )
+                                    // KMK <--
+                                    MochikuCapsuleBottomBar(
+                                        tabs = enabledTabs,
+                                        selectedIndex = selectedIndex,
+                                        onTabSelected = { tab ->
+                                            if (tabNavigator.current::class != tab::class) {
+                                                tabNavigator.current = tab
+                                            } else {
+                                                scope.launch { tab.onReselect(navigator) }
+                                            }
+                                        },
+                                    )
+                                }
                             }
+                        } else {
+                            // KMK -->
+                            ContinueReadingBar(
+                                state = continueReadingState,
+                                visible = showContinueReading,
+                                onBarClick = onOpenContinueManga,
+                                onResumeClick = onResumeContinueChapter,
+                                onDismiss = continueReadingScreenModel::dismiss,
+                                modifier = Modifier
+                                    .windowInsetsPadding(
+                                        WindowInsets.navigationBars.only(
+                                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                                        ),
+                                    )
+                                    .padding(bottom = 8.dp),
+                            )
+                            // KMK <--
                         }
                     },
                     contentWindowInsets = WindowInsets(0),

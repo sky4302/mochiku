@@ -343,6 +343,13 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.bottomBarLabels(),
                     title = stringResource(SYMR.strings.pref_show_bottom_bar_labels),
                 ),
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showContinueReadingBar(),
+                    title = stringResource(KMR.strings.pref_show_continue_reading_bar),
+                    subtitle = stringResource(KMR.strings.pref_show_continue_reading_bar_summary),
+                ),
+                // KMK <--
             ),
         )
     }

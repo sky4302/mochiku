@@ -36,6 +36,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Run Domain Unit Tests
+        run: ./gradlew :domain:testReleaseUnitTest --stacktrace
+
       - name: Build Optimized Release APK
         run: ./gradlew assembleRelease --stacktrace
 
@@ -81,16 +84,16 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.18
-          name: Mochiku v1.14.18
+          tag_name: v1.14.19
+          name: Mochiku v1.14.19
           body: |
-            ### Mochiku (餅ク) v1.14.18 - Shareable 9:16 Recap Cards
+            ### Mochiku (餅ク) v1.14.19 - Floating Continue-Reading Bar
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.18:**
-            - **Share the Recap as an Image**: Added a full-screen 9:16 story preview dialog (`RecapSharePreviewDialog`) with swipeable Receipt, Reader ID, and Barcode cards.
-            - **Privacy Toggle**: Added a live `Hide my name and titles` switch that masks reader display name, avatar photo, library card ID/barcode, and series titles (`Series N`).
-            - **Offline PNG Export & Share**: Captures crisp story cards via `rememberGraphicsLayer`, purges stale `cacheDir/share/` files (>24h), and opens the Android share sheet via `FileProvider`.
+            **What's New in v1.14.19:**
+            - **Continue-Reading Capsule Bar**: Added a compact, theme-adaptive floating pill above the bottom navigation bar showing your most recently read series cover, title, and chapter/page progress (`Ch. X · Page Y`), with one-tap reader resume and series navigation.
+            - **Swipe to Dismiss**: Swipe the pill left or right to dismiss it for the current session; it automatically re-appears as soon as a newer reading timestamp is recorded, and auto-hides on History and More tabs.
+            - **Appearance Setting**: Added `Show continue-reading bar` toggle under **Settings → Appearance → Navigation bar**.
             
             ---
             ### Download Links (Choose for your phone):
