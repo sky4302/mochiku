@@ -46,13 +46,7 @@ class GetContinueReadingTest {
 
     @Test
     fun `unfinished latest chapter emits current chapter`() = runTest {
-        val cover = MangaCover(
-            mangaId = 10L,
-            sourceId = 1L,
-            isMangaFavorite = true,
-            ogUrl = "https://example.com/cover.jpg",
-            lastModified = 100L,
-        )
+        val cover = mockk<MangaCover>()
         val latest = mockHistoryEntry(
             mangaId = 10L,
             chapterId = 101L,
@@ -80,25 +74,18 @@ class GetContinueReadingTest {
 
         result?.mangaId shouldBe 10L
         result?.mangaTitle shouldBe "Chainsaw Man"
+        result?.coverData shouldBe cover
         result?.chapter shouldBe currentChapter
         result?.lastReadAt shouldBe 5_000L
     }
 
     @Test
     fun `finished latest chapter advances to first unread chapter`() = runTest {
-        val cover = MangaCover(
-            mangaId = 20L,
-            sourceId = 2L,
-            isMangaFavorite = true,
-            ogUrl = null,
-            lastModified = 200L,
-        )
         val latest = mockHistoryEntry(
             mangaId = 20L,
             chapterId = 201L,
             title = "Dandadan",
             readAtMs = 9_000L,
-            cover = cover,
         )
         val alreadyReadNext = Chapter.create().copy(
             id = 202L,
@@ -125,19 +112,11 @@ class GetContinueReadingTest {
 
     @Test
     fun `finished latest chapter with no unread left emits null`() = runTest {
-        val cover = MangaCover(
-            mangaId = 30L,
-            sourceId = 3L,
-            isMangaFavorite = false,
-            ogUrl = null,
-            lastModified = 300L,
-        )
         val latest = mockHistoryEntry(
             mangaId = 30L,
             chapterId = 305L,
             title = "Monster",
             readAtMs = 12_000L,
-            cover = cover,
         )
         val trailingRead = Chapter.create().copy(
             id = 306L,
@@ -158,7 +137,7 @@ class GetContinueReadingTest {
         chapterId: Long,
         title: String,
         readAtMs: Long,
-        cover: MangaCover,
+        cover: MangaCover = mockk(),
     ): HistoryWithRelations {
         return mockk {
             every { this@mockk.mangaId } returns mangaId
