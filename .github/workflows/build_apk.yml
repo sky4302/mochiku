@@ -81,13 +81,14 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.13
-          name: Mochiku v1.14.13
+          tag_name: v1.14.14
+          name: Mochiku v1.14.14
           body: |
-            ### Mochiku (餅ク) v1.14.13 - Dynamic Theming & Light Theme Legibility
+            ### Mochiku (餅ク) v1.14.14 - Permanent Keystore & Theme Updates
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.13:**
+            **What's New in v1.14.14:**
+            - **Permanent Release Keystore**: All APKs and future updates are now signed with a permanent cryptographic release keystore. No more "package conflict" errors when updating!
             - **Theme-Adaptive Profile ID Card**: The ID Card now dynamically adapts to all app themes (Sakura, Lavender, Peach, Teal, Material You) in both Light and Dark modes.
             - **Light Mode Recap Legibility Fix**: Fixed invisible white-on-white text in Story Recap slides (`"Again and again"`, `"Let's see your bill"`, chapters read subtitle, etc.) so all slides are high contrast and crystal clear in Light Theme.
             - **Thermal Receipt Edge Border**: Added subtle edge border definition to the vintage thermal receipt so it stands out cleanly against pure white backgrounds.

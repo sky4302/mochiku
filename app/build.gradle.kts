@@ -28,8 +28,8 @@ android {
     defaultConfig {
         applicationId = "app.mochiku"
 
-        versionCode = 94
-        versionName = "1.14.13"
+        versionCode = 95
+        versionName = "1.14.14"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
@@ -40,14 +40,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("mochiku.keystore")
+            storePassword = "mochikukey"
+            keyAlias = "mochiku"
+            keyPassword = "mochikukey"
+        }
+    }
+
     buildTypes {
         val debug by getting {
+            signingConfig = signingConfigs.getByName("release")
             applicationIdSuffix = ".dev"
             versionNameSuffix = ""
             isPseudoLocalesEnabled = true
         }
         val release by getting {
-            signingConfig = debug.signingConfig
+            signingConfig = signingConfigs.getByName("release")
             applicationIdSuffix = ".dev"
             versionNameSuffix = ""
             isMinifyEnabled = Config.enableCodeShrink
