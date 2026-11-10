@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,19 +33,21 @@ fun LogoHeader() {
     ) {
         Box(
             modifier = Modifier
-                .size(80.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .size(84.dp)
+                .clip(CircleShape)
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    shape = CircleShape,
                 ),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(R.drawable.komikku),
                 contentDescription = "Mochiku Logo",
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier
+                    .size(84.dp)
+                    .clip(CircleShape),
             )
         }
 

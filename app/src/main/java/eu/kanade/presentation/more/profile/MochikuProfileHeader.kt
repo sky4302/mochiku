@@ -80,7 +80,11 @@ fun MochikuProfileHeader(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+            ) {
                 Text(
                     text = "Hello again, $username!",
                     fontSize = 24.sp,
@@ -104,7 +108,7 @@ fun MochikuProfileHeader(
             ) {
                 Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Edit Profile", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text("Edit Profile", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
             }
         }
 

@@ -29,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -42,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -77,10 +77,11 @@ fun MochikuEditProfileDialog(
     }
 
     Dialog(onDismissRequest = onDismissRequest) {
+        val colors = MaterialTheme.colorScheme
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF111114),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF282830)),
+            color = colors.surfaceContainerHigh,
+            border = androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.5f)),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
@@ -96,24 +97,24 @@ fun MochikuEditProfileDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Set Up Profile",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = colors.onSurface,
                         )
                         Text(
                             text = "Personalize your Mochiku ID Card",
                             fontSize = 12.sp,
-                            color = Color(0xFF8E8E8E),
+                            color = colors.onSurfaceVariant,
                         )
                     }
                     IconButton(onClick = onDismissRequest) {
                         Icon(
                             imageVector = Icons.Outlined.Close,
                             contentDescription = "Close",
-                            tint = Color(0xFF8E8E8E),
+                            tint = colors.onSurfaceVariant,
                         )
                     }
                 }
@@ -123,8 +124,8 @@ fun MochikuEditProfileDialog(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF222228))
-                        .border(2.dp, Color(0xFF3E3E48), CircleShape)
+                        .background(colors.surfaceContainerHighest)
+                        .border(2.dp, colors.outlineVariant, CircleShape)
                         .clickable { photoPickerLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -139,7 +140,7 @@ fun MochikuEditProfileDialog(
                         Icon(
                             imageVector = Icons.Filled.PersonOutline,
                             contentDescription = "Default Avatar",
-                            tint = Color(0xFF777780),
+                            tint = colors.onSurfaceVariant,
                             modifier = Modifier.size(64.dp),
                         )
                     }
@@ -150,14 +151,14 @@ fun MochikuEditProfileDialog(
                             .align(Alignment.BottomEnd)
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(Color.White)
-                            .border(2.dp, Color(0xFF111114), CircleShape),
+                            .background(colors.primary)
+                            .border(2.dp, colors.surfaceContainerHigh, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Edit,
                             contentDescription = "Pick Image",
-                            tint = Color.Black,
+                            tint = colors.onPrimary,
                             modifier = Modifier.size(16.dp),
                         )
                     }
@@ -170,12 +171,12 @@ fun MochikuEditProfileDialog(
                     OutlinedButton(
                         onClick = { photoPickerLauncher.launch("image/*") },
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3A3A44)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant),
                     ) {
                         Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Choose Photo", fontSize = 12.sp)
+                        Text("Choose Photo", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
 
                     if (currentPhotoPath != null) {
@@ -185,12 +186,12 @@ fun MochikuEditProfileDialog(
                                 currentPhotoPath = null
                             },
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252)),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF442A2A)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, colors.error.copy(alpha = 0.5f)),
                         ) {
                             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Remove", fontSize = 12.sp)
+                            Text("Remove", fontSize = 12.sp, maxLines = 1, softWrap = false)
                         }
                     }
                 }
@@ -202,22 +203,27 @@ fun MochikuEditProfileDialog(
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF8E8E8E),
+                        color = colors.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
                         value = username,
                         onValueChange = { if (it.length <= 28) username = it },
                         singleLine = true,
-                        placeholder = { Text("Enter your username", color = Color(0xFF55555C)) },
+                        placeholder = {
+                            Text(
+                                text = "Enter your username",
+                                color = colors.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                        },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = Color(0xFF33333C),
-                            focusedContainerColor = Color(0xFF18181E),
-                            unfocusedContainerColor = Color(0xFF18181E),
-                            cursorColor = Color.White,
+                            focusedTextColor = colors.onSurface,
+                            unfocusedTextColor = colors.onSurface,
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outlineVariant,
+                            focusedContainerColor = colors.surfaceContainer,
+                            unfocusedContainerColor = colors.surfaceContainer,
+                            cursorColor = colors.primary,
                         ),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth(),
@@ -229,8 +235,8 @@ fun MochikuEditProfileDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF18181E))
-                        .border(1.dp, Color(0xFF282832), RoundedCornerShape(14.dp))
+                        .background(colors.surfaceContainer)
+                        .border(1.dp, colors.outlineVariant.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
@@ -238,15 +244,15 @@ fun MochikuEditProfileDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("PASSPORT ID", fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF7E7E88))
-                        Text("#USR$cardNumber", fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("PASSPORT ID", fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
+                        Text("#USR$cardNumber", fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = colors.onSurface)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("JOINED DATE", fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF7E7E88))
-                        Text(joinedDate, fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = Color.White)
+                        Text("JOINED DATE", fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = colors.onSurfaceVariant)
+                        Text(joinedDate, fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = colors.onSurface)
                     }
                 }
 
@@ -259,10 +265,10 @@ fun MochikuEditProfileDialog(
                         onClick = onDismissRequest,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF8E8E8E)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2A34)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.onSurfaceVariant),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant),
                     ) {
-                        Text("Cancel", fontWeight = FontWeight.Medium)
+                        Text("Cancel", fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false)
                     }
 
                     Button(
@@ -275,13 +281,13 @@ fun MochikuEditProfileDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black,
+                            containerColor = colors.primary,
+                            contentColor = colors.onPrimary,
                         ),
                     ) {
                         Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Save", fontWeight = FontWeight.Bold)
+                        Text("Save", fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                     }
                 }
             }

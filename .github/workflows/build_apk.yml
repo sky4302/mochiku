@@ -81,17 +81,16 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.15
-          name: Mochiku v1.14.15
+          tag_name: v1.14.16
+          name: Mochiku v1.14.16
           body: |
-            ### Mochiku (餅ク) v1.14.15 - Interactive Sliding Pill Nav, UI Polish & Ultra-HD Logo
+            ### Mochiku (餅ク) v1.14.16 - Circular Emblem Logo & Light-Theme Profile Setup
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.15:**
-            - **Interactive Sliding Capsule Navigation**: Slide your finger left or right across the bottom capsule pill bar to scrub and switch between tabs with smooth liquid indicator tracking and haptic ticks.
-            - **Statistics Passport UI Fix**: Fixed the squished `Month / Year` toggle pill, added clean horizontal screen margins, fixed header visibility in Light Mode, and reorganized `Story Rewind` / `Receipt` / `Edit Profile` buttons so text never breaks mid-word.
-            - **Ultra-HD Vector & 1024px Logo**: Replaced pixelated app, adaptive, monochrome, splash, and notification icons with supersampled 1024px artwork and infinite-resolution VectorDrawables.
-            - **Permanent Release Keystore**: Seamless 1-tap in-app updates with zero package conflicts.
+            **What's New in v1.14.16:**
+            - **Circular App Logo (Komikku / Mihon Style)**: Redesigned the Mochiku `ク` emblem inside a crisp circular ring medallion with bold 3D manga extrusion across the app launcher, splash screen, More/About header (`CircleShape`), and Story Recap.
+            - **Light-Theme "Set Up Profile" Dialog**: Replaced all hardcoded dark charcoal colors inside `Set Up Profile` with dynamic Material 3 theme tokens so it adapts cleanly to Light Mode and all custom themes.
+            - **Interactive Sliding Capsule Navigation & UI Polish**: Includes all v1.14.15 enhancements (sliding bottom pill nav, un-squished Stats Passport layout, permanent release keystore).
             
             ---
             ### Download Links (Choose for your phone):

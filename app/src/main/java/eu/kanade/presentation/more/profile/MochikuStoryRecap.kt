@@ -704,7 +704,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
-                    color = Color(0xFF52FF7A),
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -751,7 +751,7 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
                         Image(
                             painter = painterResource(R.drawable.komikku),
                             contentDescription = "Mochiku Logo",
-                            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)),
+                            modifier = Modifier.size(64.dp).clip(CircleShape),
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
