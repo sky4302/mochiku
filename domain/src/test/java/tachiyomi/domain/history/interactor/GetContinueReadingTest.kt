@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -34,6 +35,7 @@ class GetContinueReadingTest {
     private lateinit var getNextChapters: GetNextChapters
     private lateinit var getChapter: GetChapter
     private lateinit var historyPreferences: HistoryPreferences
+    private lateinit var testDispatcher: TestDispatcher
     private lateinit var getContinueReading: GetContinueReading
 
     @BeforeEach
@@ -41,6 +43,7 @@ class GetContinueReadingTest {
         historyRepository = mockk()
         getNextChapters = mockk()
         getChapter = mockk()
+        testDispatcher = UnconfinedTestDispatcher()
         val rereadFlow = MutableStateFlow("")
         val fakeStringPref = object : Preference<String> {
             override fun key(): String = "pref_continue_reading_reread_state"
@@ -66,12 +69,12 @@ class GetContinueReadingTest {
             getNextChapters = getNextChapters,
             getChapter = getChapter,
             historyPreferences = historyPreferences,
-            dispatcher = UnconfinedTestDispatcher(),
+            dispatcher = testDispatcher,
         )
     }
 
     @Test
-    fun `empty history emits null`() = runTest {
+    fun `empty history emits null`() = runTest(testDispatcher) {
         every { historyRepository.getHistory("", null, null, null) } returns flowOf(emptyList())
 
         val result = getContinueReading.subscribe().first()
@@ -80,7 +83,7 @@ class GetContinueReadingTest {
     }
 
     @Test
-    fun `unfinished latest chapter emits current chapter`() = runTest {
+    fun `unfinished latest chapter emits current chapter`() = runTest(testDispatcher) {
         val cover = mockk<MangaCover>()
         val latest = mockHistoryEntry(
             mangaId = 10L,
@@ -115,7 +118,7 @@ class GetContinueReadingTest {
     }
 
     @Test
-    fun `finished latest chapter advances to first unread chapter`() = runTest {
+    fun `finished latest chapter advances to first unread chapter`() = runTest(testDispatcher) {
         val latest = mockHistoryEntry(
             mangaId = 20L,
             chapterId = 201L,
@@ -146,7 +149,7 @@ class GetContinueReadingTest {
     }
 
     @Test
-    fun `finished latest chapter with no unread left emits null`() = runTest {
+    fun `finished latest chapter with no unread left emits null`() = runTest(testDispatcher) {
         val latest = mockHistoryEntry(
             mangaId = 30L,
             chapterId = 305L,
@@ -168,7 +171,7 @@ class GetContinueReadingTest {
     }
 
     @Test
-    fun `active mid-chapter reread emits current read chapter with resumePage`() = runTest {
+    fun `active mid-chapter reread emits current read chapter with resumePage`() = runTest(testDispatcher) {
         val latest = mockHistoryEntry(
             mangaId = 40L,
             chapterId = 405L,
@@ -202,7 +205,7 @@ class GetContinueReadingTest {
     }
 
     @Test
-    fun `completed reread chapter advances to next chapter starting at page 0`() = runTest {
+    fun `completed reread chapter advances to next chapter starting at page 0`() = runTest(testDispatcher) {
         val latest = mockHistoryEntry(
             mangaId = 40L,
             chapterId = 405L,
@@ -229,7 +232,7 @@ class GetContinueReadingTest {
     }
 
     @Test
-    fun `completed reread on final chapter emits null`() = runTest {
+    fun `completed reread on final chapter emits null`() = runTest(testDispatcher) {
         val latest = mockHistoryEntry(
             mangaId = 40L,
             chapterId = 500L,
