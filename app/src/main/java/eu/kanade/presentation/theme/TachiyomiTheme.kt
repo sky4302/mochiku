@@ -23,8 +23,8 @@ import eu.kanade.presentation.theme.colorscheme.GreenAppleColorScheme
 import eu.kanade.presentation.theme.colorscheme.LavenderColorScheme
 import eu.kanade.presentation.theme.colorscheme.MatrixColorScheme
 import eu.kanade.presentation.theme.colorscheme.MidnightDuskColorScheme
-import eu.kanade.presentation.theme.colorscheme.MochikuColorScheme
 import eu.kanade.presentation.theme.colorscheme.MochaColorScheme
+import eu.kanade.presentation.theme.colorscheme.MochikuColorScheme
 import eu.kanade.presentation.theme.colorscheme.MonetColorScheme
 import eu.kanade.presentation.theme.colorscheme.MonochromeColorScheme
 import eu.kanade.presentation.theme.colorscheme.NordColorScheme

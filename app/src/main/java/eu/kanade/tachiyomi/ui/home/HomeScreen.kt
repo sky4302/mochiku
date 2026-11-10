@@ -72,7 +72,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
-import kotlin.math.roundToInt
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -105,6 +104,7 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.math.roundToInt
 
 object HomeScreen : Screen() {
     @Suppress("unused")
@@ -343,7 +343,13 @@ object HomeScreen : Screen() {
                         val isSelected = index == visualSelectedIndex
                         val interactionSource = remember { MutableInteractionSource() }
                         val iconScale by animateFloatAsState(
-                            targetValue = if (isSelected && dragSlotFloat != null) 1.14f else if (isSelected) 1.04f else 1f,
+                            targetValue = if (isSelected && dragSlotFloat != null) {
+                                1.14f
+                            } else if (isSelected) {
+                                1.04f
+                            } else {
+                                1f
+                            },
                             animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
                             label = "tabScale",
                         )
