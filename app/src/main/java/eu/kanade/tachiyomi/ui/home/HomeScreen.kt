@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -11,6 +12,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -42,9 +44,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +62,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -64,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import kotlin.math.roundToInt
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -258,6 +267,12 @@ object HomeScreen : Screen() {
         val activeContentColor = colorScheme.onSecondaryContainer
         val inactiveContentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
 
+        var rowWidthPx by remember { mutableFloatStateOf(0f) }
+        var dragSlotFloat by remember { mutableStateOf<Float?>(null) }
+        var lastHapticSlot by remember { mutableIntStateOf(selectedIndex) }
+        val activeDragSlot = dragSlotFloat?.roundToInt()?.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
+        val visualSelectedIndex = activeDragSlot ?: selectedIndex
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -284,22 +299,64 @@ object HomeScreen : Screen() {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 6.dp)
+                        .onSizeChanged { rowWidthPx = it.width.toFloat() }
+                        .pointerInput(tabs) {
+                            fun updateSlideFromX(pointerX: Float, forceHaptic: Boolean = false) {
+                                if (rowWidthPx <= 0f || tabs.isEmpty()) return
+                                val slotWidth = rowWidthPx / tabs.size
+                                dragSlotFloat = (pointerX / slotWidth - 0.5f).coerceIn(0f, (tabs.size - 1).toFloat())
+                                val hoveredSlot = (pointerX / slotWidth).toInt().coerceIn(0, tabs.lastIndex)
+                                if (forceHaptic || hoveredSlot != lastHapticSlot) {
+                                    lastHapticSlot = hoveredSlot
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                            }
+                            detectHorizontalDragGestures(
+                                onDragStart = { offset ->
+                                    updateSlideFromX(offset.x, forceHaptic = true)
+                                },
+                                onHorizontalDrag = { change, _ ->
+                                    change.consume()
+                                    updateSlideFromX(change.position.x)
+                                },
+                                onDragEnd = {
+                                    val target = dragSlotFloat?.roundToInt()?.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
+                                    dragSlotFloat = null
+                                    if (target != null && target in tabs.indices) {
+                                        onTabSelected(tabs[target])
+                                    }
+                                },
+                                onDragCancel = {
+                                    dragSlotFloat = null
+                                },
+                            )
+                        }
                         .capsuleNavHighlight(
                             selectedIndex = selectedIndex,
                             tabCount = tabs.size,
                             highlightColor = highlightColor,
+                            dragIndex = dragSlotFloat,
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     tabs.fastForEachIndexed { index, tab ->
-                        val isSelected = index == selectedIndex
+                        val isSelected = index == visualSelectedIndex
                         val interactionSource = remember { MutableInteractionSource() }
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected && dragSlotFloat != null) 1.14f else if (isSelected) 1.04f else 1f,
+                            animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
+                            label = "tabScale",
+                        )
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(50))
+                                .graphicsLayer {
+                                    scaleX = iconScale
+                                    scaleY = iconScale
+                                }
                                 .pressBounce(interactionSource, pressedScale = 0.86f)
                                 .clickable(
                                     interactionSource = interactionSource,
@@ -482,12 +539,24 @@ internal fun Modifier.capsuleNavHighlight(
     selectedIndex: Int,
     tabCount: Int,
     highlightColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    dragIndex: Float? = null,
 ): Modifier {
     val start = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
     val end = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
     val shown = remember { Animatable(if (selectedIndex >= 0) 1f else 0f) }
+    val dragInsetBoost by animateFloatAsState(
+        targetValue = if (dragIndex != null) 2f else 0f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 500f),
+        label = "dragInsetBoost",
+    )
 
-    LaunchedEffect(selectedIndex) {
+    LaunchedEffect(selectedIndex, dragIndex) {
+        if (dragIndex != null) {
+            shown.snapTo(1f)
+            start.snapTo(dragIndex)
+            end.snapTo(dragIndex)
+            return@LaunchedEffect
+        }
         if (selectedIndex < 0) {
             shown.animateTo(0f, tween(200))
             return@LaunchedEffect
@@ -508,7 +577,7 @@ internal fun Modifier.capsuleNavHighlight(
         if (alpha <= 0f || tabCount == 0) return@drawBehind
         val slot = size.width / tabCount
         val halfGap = NavHighlightGap.toPx() / 2f
-        val inset = NavHighlightInset.toPx()
+        val inset = (NavHighlightInset - dragInsetBoost.dp).coerceAtLeast(4.dp).toPx()
         val left = start.value * slot + halfGap
         val right = (end.value + 1f) * slot - halfGap
         val height = size.height - inset * 2f

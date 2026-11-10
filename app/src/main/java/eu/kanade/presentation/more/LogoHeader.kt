@@ -43,7 +43,7 @@ fun LogoHeader() {
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painter = painterResource(R.mipmap.ic_launcher),
+                painter = painterResource(R.drawable.komikku),
                 contentDescription = "Mochiku Logo",
                 modifier = Modifier.size(80.dp),
             )

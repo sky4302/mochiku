@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -92,7 +95,7 @@ fun MochikuRecapSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         // Section Header & Range Selector
@@ -101,12 +104,16 @@ fun MochikuRecapSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp),
+            ) {
                 Text(
                     text = "Mochiku Manga Passport & Recap",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
                     text = "Adapted from Mochy-Music · 100% On-Device",
@@ -119,39 +126,30 @@ fun MochikuRecapSection(
             // Month / Year toggle pill
             Row(
                 modifier = Modifier
+                    .wrapContentWidth()
                     .clip(RoundedCornerShape(50))
                     .background(MaterialTheme.colorScheme.surfaceContainer)
                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(50))
                     .padding(2.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(if (rangeMode == "Month") MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .clickable { rangeMode = "Month" }
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        text = "Month",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (rangeMode == "Month") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(if (rangeMode == "Year") MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .clickable { rangeMode = "Year" }
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        text = "Year",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (rangeMode == "Year") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                listOf("Month", "Year").forEach { mode ->
+                    val selected = rangeMode == mode
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            .clickable { rangeMode = mode }
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = mode,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -214,13 +212,16 @@ fun MochikuRecapSection(
                 )
 
                 // Action Buttons
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Button(
                         onClick = { showStoryDialog = true },
-                        modifier = Modifier.weight(1.3f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(42.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -230,42 +231,34 @@ fun MochikuRecapSection(
                         Icon(
                             imageVector = Icons.Outlined.PlayArrow,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(18.dp),
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Story Rewind", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Story Rewind",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
                     }
 
-                    OutlinedButton(
-                        onClick = { showReceiptDialog = true },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        shape = RoundedCornerShape(12.dp),
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Receipt,
-                            contentDescription = null,
-                            modifier = Modifier.size(15.dp),
+                        RecapSecondaryButton(
+                            label = "Receipt",
+                            icon = Icons.Outlined.Receipt,
+                            onClick = { showReceiptDialog = true },
+                            modifier = Modifier.weight(1f),
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Receipt", fontSize = 12.sp)
-                    }
-
-                    OutlinedButton(
-                        onClick = { showEditProfileDialog = true },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(15.dp),
+                        RecapSecondaryButton(
+                            label = "Edit Profile",
+                            icon = Icons.Outlined.Edit,
+                            onClick = { showEditProfileDialog = true },
+                            modifier = Modifier.weight(1f),
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Profile", fontSize = 12.sp)
                     }
                 }
             }
@@ -377,6 +370,7 @@ fun MochikuRecapSection(
                             close()
                         }
                         drawPath(path, color = Color(0xFFF6F6F4))
+                        drawPath(path, color = Color(0x2B000000), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
                     }
                     .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp),
             ) {
@@ -506,6 +500,38 @@ fun MochikuRecapSection(
             totalChaptersRead = effectiveChapters,
             libraryCount = effectiveLibrary,
             onDismissRequest = { showStoryDialog = false },
+        )
+    }
+}
+
+/** Single-line outlined action button used below the primary Story Rewind CTA. */
+@Composable
+private fun RecapSecondaryButton(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.height(40.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }

@@ -217,9 +217,9 @@ fun MochikuStoryRecapDialog(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Image(
-                                        painter = painterResource(R.mipmap.ic_launcher),
+                                        painter = painterResource(R.drawable.komikku),
                                         contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
+                                        modifier = Modifier.size(16.dp).clip(CircleShape),
                                     )
                                 }
                             }
@@ -749,9 +749,9 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Image(
-                            painter = painterResource(R.mipmap.ic_launcher),
+                            painter = painterResource(R.drawable.komikku),
                             contentDescription = "Mochiku Logo",
-                            modifier = Modifier.size(64.dp),
+                            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)),
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
