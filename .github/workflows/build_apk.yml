@@ -81,16 +81,15 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.16
-          name: Mochiku v1.14.16
+          tag_name: v1.14.17
+          name: Mochiku v1.14.17
           body: |
-            ### Mochiku (餅ク) v1.14.16 - Circular Emblem Logo & Light-Theme Profile Setup
+            ### Mochiku (餅ク) v1.14.17 - Accurate Month Calendar Recap Counter
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.16:**
-            - **Circular App Logo (Komikku / Mihon Style)**: Redesigned the Mochiku `ク` emblem inside a crisp circular ring medallion with bold 3D manga extrusion across the app launcher, splash screen, More/About header (`CircleShape`), and Story Recap.
-            - **Light-Theme "Set Up Profile" Dialog**: Replaced all hardcoded dark charcoal colors inside `Set Up Profile` with dynamic Material 3 theme tokens so it adapts cleanly to Light Mode and all custom themes.
-            - **Interactive Sliding Capsule Navigation & UI Polish**: Includes all v1.14.15 enhancements (sliding bottom pill nav, un-squished Stats Passport layout, permanent release keystore).
+            **What's New in v1.14.17:**
+            - **Real Calendar Month Percentage**: Fixed Slide 2 in Story Recap (`"$monthName is X%"`) to compute actual calendar month progress (`dayOfMonth / lengthOfMonth`, e.g., Day 10 of 30 = `33.33%`) formatted to 2 decimal places instead of an arbitrary 50-chapter ratio.
+            - **Includes v1.14.16**: Komikku-style circular emblem logo across launcher, splash, and headers + Light-Theme adaptive "Set Up Profile" dialog.
             
             ---
             ### Download Links (Choose for your phone):

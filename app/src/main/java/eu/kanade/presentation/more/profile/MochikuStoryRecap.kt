@@ -72,6 +72,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import java.time.LocalDate
+import java.util.Locale
 
 @Composable
 fun MochikuStoryRecapDialog(
@@ -397,11 +399,14 @@ private fun SlideJourney(
     }
 }
 
-/** Slide 2: Month Pace (Progress Bar with animated count-up) */
+/** Slide 2: Month Pace (Real calendar month progress with animated 2-decimal count-up) */
 @Composable
 private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
-    val targetProgress = if (monthChaptersRead > 0) (monthChaptersRead / 50f).coerceIn(0.15f, 1f) else 0.05f
-    val targetPercentage = (targetProgress * 100).toInt()
+    val today = remember { LocalDate.now() }
+    val dayOfMonth = today.dayOfMonth
+    val daysInMonth = today.lengthOfMonth().coerceAtLeast(1)
+    val targetProgress = (dayOfMonth.toFloat() / daysInMonth.toFloat()).coerceIn(0f, 1f)
+    val targetPercentage = targetProgress * 100f
 
     // PPTX Counter animation
     val animatedPercent = remember { Animatable(0f) }
@@ -410,7 +415,7 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
     LaunchedEffect(targetPercentage) {
         delay(250)
         animatedPercent.animateTo(
-            targetValue = targetPercentage.toFloat(),
+            targetValue = targetPercentage,
             animationSpec = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
         )
     }
@@ -439,9 +444,11 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
 
         PptxBuildIn(index = 1) {
             Text(
-                text = "${animatedPercent.value.toInt()}%",
-                fontSize = 76.sp,
+                text = String.format(Locale.US, "%.2f%%", animatedPercent.value),
+                fontSize = 62.sp,
                 fontWeight = FontWeight.Black,
+                maxLines = 1,
+                softWrap = false,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
@@ -476,13 +483,14 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
         PptxBuildIn(index = 4) {
             Text(
                 text = if (monthChaptersRead > 0) {
-                    "$monthChaptersRead chapters read this month"
+                    "Day $dayOfMonth of $daysInMonth · $monthChaptersRead chapters read this month"
                 } else {
-                    "0 chapters read so far in $monthName"
+                    "Day $dayOfMonth of $daysInMonth · 0 chapters read so far"
                 },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
             )
         }
     }
