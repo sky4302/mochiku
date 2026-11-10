@@ -45,7 +45,10 @@ import eu.kanade.tachiyomi.ui.more.DownloadQueueState
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import exh.pref.DelegateSourcePreferences
 import exh.source.ExhPreferences
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.Constants
+import tachiyomi.domain.history.model.StampState
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -80,6 +83,7 @@ fun MoreScreen(
     onClickHistory: () -> Unit,
     // KMK -->
     onClickLibraryUpdateErrors: () -> Unit,
+    passportStamps: ImmutableList<StampState> = persistentListOf(),
     // KMK <--
 ) {
     val uriHandler = LocalUriHandler.current
@@ -94,7 +98,10 @@ fun MoreScreen(
             contentPadding = contentPadding,
         ) {
             item {
-                MochikuProfileHeader(onClickStats = onClickStats)
+                MochikuProfileHeader(
+                    onClickStats = onClickStats,
+                    recentStamps = passportStamps,
+                )
             }
             item {
                 SwitchPreferenceWidget(

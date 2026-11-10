@@ -84,16 +84,16 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.20
-          name: Mochiku v1.14.20
+          tag_name: v1.14.21
+          name: Mochiku v1.14.21
           body: |
-            ### Mochiku (餅ク) v1.14.20 - Passport Stamps & Slam Celebration
+            ### Mochiku (餅ク) v1.14.21 - Dynamic Theme Share Recap & Mini-Stamps Sync
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.20:**
-            - **Passport Stamps Grid**: Added a theme-adaptive 3-column milestone grid in **More → Statistics** tracking 8 achievements (`First Page`, `Bookworm`, `Grand Archivist`, `Week Streak`, `Monthly Habit`, `Night Owl`, `Marathoner`, and `Series Finisher`) with sticky persistence across history clears and tap-to-inspect progress sheets.
-            - **New Stamp Slam Celebration**: Opening Statistics after earning a new stamp plays a spring-physics slam animation with haptic feedback, queueing multiple unseen stamps one by one.
-            - **Reader ID Mini-Stamps & Stamps Story Card**: Displays your 3 latest earned ink stamps on the Reader ID front face and adds a swipeable **Stamps** card to the 9:16 Recap Share sheet.
+            **What's New in v1.14.21:**
+            - **Dynamic Share Recap Theme**: Updated all 9:16 Share Recap story cards (Receipt, Reader ID, Barcode, and Stamps) to follow your active `MaterialTheme.colorScheme` (Light, Dark, Lavender, Peach, Material You, etc.) instead of a hardcoded black card palette.
+            - **Mini-Stamps on More Tab & Story Conclusion**: Wired live `GetPassportStamps` into the **More** tab Reader ID card and added earned mini-stamps inside Story Recap Slide 8's minimalist preview card.
+            - **Story Headline Spacing Fix**: Fixed overlapping multi-line text (`"That's your <Month> recap!"`) on Slide 8 and other large headings in Story Recap by adding explicit proportional `lineHeight`.
             
             ---
             ### Download Links (Choose for your phone):

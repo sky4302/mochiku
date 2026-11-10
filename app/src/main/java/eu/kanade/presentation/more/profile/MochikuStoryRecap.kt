@@ -70,8 +70,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
+import eu.kanade.presentation.more.stats.components.PassportStampBadge
 import eu.kanade.tachiyomi.R
 import kotlinx.coroutines.delay
+import tachiyomi.domain.history.model.StampState
 import java.time.LocalDate
 import java.util.Locale
 
@@ -85,6 +87,7 @@ fun MochikuStoryRecapDialog(
     totalChaptersRead: Int,
     libraryCount: Int,
     onDismissRequest: () -> Unit,
+    recentStamps: List<StampState> = emptyList(),
 ) {
     // Query actual monthly reading data from Komikku's history database
     val recapData by produceState<MochikuRecapData?>(initialValue = null) {
@@ -275,7 +278,7 @@ fun MochikuStoryRecapDialog(
                             4 -> SlideCoverArtwork(data)
                             5 -> SlideMilestoneChapters(data)
                             6 -> SlideThermalReceipt(username, cardNumber, data)
-                            7 -> SlideConclusion(username, cardNumber, joinedDate, data.monthName, photoPath, onDismissRequest)
+                            7 -> SlideConclusion(username, cardNumber, joinedDate, data.monthName, photoPath, recentStamps, onDismissRequest)
                         }
                     }
                 }
@@ -349,6 +352,7 @@ private fun SlideJourney(
             Text(
                 text = joinedDate,
                 fontSize = 32.sp,
+                lineHeight = 38.sp,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
@@ -697,6 +701,7 @@ private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
             Text(
                 text = hero?.title ?: "No Manga Read Yet",
                 fontSize = 24.sp,
+                lineHeight = 30.sp,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
@@ -1026,8 +1031,16 @@ private fun SlideConclusion(
     joinedDate: String,
     monthName: String,
     photoPath: String?,
+    recentStamps: List<StampState> = emptyList(),
     onFinish: () -> Unit,
 ) {
+    val latestMiniStamps = remember(recentStamps) {
+        recentStamps
+            .filter { it.isUnlocked }
+            .sortedByDescending { it.unlockedAt ?: 0L }
+            .take(3)
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1037,12 +1050,13 @@ private fun SlideConclusion(
             Text(
                 text = "There you go",
                 fontSize = 32.sp,
+                lineHeight = 38.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
-        // Mini preview of the ID card
+        // Mini preview of the ID card (minimalist card + latest earned mini-stamps)
         PptxBuildIn(index = 1) {
             Surface(
                 shape = RoundedCornerShape(18.dp),
@@ -1052,19 +1066,44 @@ private fun SlideConclusion(
                     .fillMaxWidth(0.9f)
                     .height(130.dp),
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    StoryAvatar(photoPath = photoPath, size = 60)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        StoryAvatar(photoPath = photoPath, size = 60)
 
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("PROFILE USR#$cardNumber", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(username, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text("joined at $joinedDate", fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = if (latestMiniStamps.isNotEmpty()) 88.dp else 0.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text("PROFILE USR#$cardNumber", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(username, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("joined at $joinedDate", fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        }
+                    }
+
+                    if (latestMiniStamps.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 12.dp, bottom = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy((-10).dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            latestMiniStamps.forEach { stamp ->
+                                PassportStampBadge(
+                                    state = stamp,
+                                    size = 38.dp,
+                                    compact = true,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1076,6 +1115,7 @@ private fun SlideConclusion(
             Text(
                 text = "That's your $monthName recap!",
                 fontSize = 28.sp,
+                lineHeight = 34.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,

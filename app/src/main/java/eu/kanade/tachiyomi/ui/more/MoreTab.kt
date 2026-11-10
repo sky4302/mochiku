@@ -34,12 +34,20 @@ import eu.kanade.tachiyomi.ui.setting.SettingsScreen
 import eu.kanade.tachiyomi.ui.stats.StatsScreen
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import exh.ui.batchadd.BatchAddScreen
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.domain.history.interactor.GetPassportStamps
+import tachiyomi.domain.history.model.StampState
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -71,6 +79,9 @@ data object MoreTab : Tab {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel { MoreScreenModel() }
         val downloadQueueState by screenModel.downloadQueueState.collectAsState()
+        // KMK -->
+        val passportStamps by screenModel.passportStamps.collectAsState()
+        // KMK <--
         MoreScreen(
             downloadQueueStateProvider = { downloadQueueState },
             downloadedOnly = screenModel.downloadedOnly,
@@ -81,6 +92,9 @@ data object MoreTab : Tab {
             showNavUpdates = screenModel.showNavUpdates,
             showNavHistory = screenModel.showNavHistory,
             // SY <--
+            // KMK -->
+            passportStamps = passportStamps,
+            // KMK <--
             onClickDownloadQueue = { navigator.push(DownloadQueueScreen) },
             onClickCategories = { navigator.push(CategoryScreen()) },
             onClickStats = { navigator.push(StatsScreen()) },
@@ -113,6 +127,9 @@ private class MoreScreenModel(
     // SY -->
     uiPreferences: UiPreferences = Injekt.get(),
     // SY <--
+    // KMK -->
+    getPassportStamps: GetPassportStamps = Injekt.get(),
+    // KMK <--
 ) : ScreenModel {
 
     var downloadedOnly by preferences.downloadedOnly().asState(screenModelScope)
@@ -125,6 +142,12 @@ private class MoreScreenModel(
 
     private var _downloadQueueState: MutableStateFlow<DownloadQueueState> = MutableStateFlow(DownloadQueueState.Stopped)
     val downloadQueueState: StateFlow<DownloadQueueState> = _downloadQueueState.asStateFlow()
+
+    // KMK -->
+    val passportStamps: StateFlow<ImmutableList<StampState>> = getPassportStamps.subscribe()
+        .map { it.toImmutableList() }
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5_000), persistentListOf())
+    // KMK <--
 
     init {
         // Handle running/paused status change and queue progress updating

@@ -494,6 +494,9 @@ fun MochikuRecapSection(
             totalChaptersRead = effectiveChapters,
             libraryCount = effectiveLibrary,
             onDismissRequest = { showStoryDialog = false },
+            // KMK -->
+            recentStamps = passportStamps,
+            // KMK <--
         )
     }
 }

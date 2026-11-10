@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -37,12 +37,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.more.profile.ID_CARD_ASPECT
 import eu.kanade.presentation.more.profile.MochikuIdCardBackContent
 import eu.kanade.presentation.more.profile.MochikuIdCardFrontContent
+import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import tachiyomi.domain.history.model.PassportStamp
 import tachiyomi.domain.history.model.StampState
 import tachiyomi.i18n.kmk.KMR
@@ -66,22 +67,6 @@ data class RecapShareData(
     val libraryCount: Int,
     val topMangaList: List<RecapShareMangaRow>,
     val unlockedStamps: List<StampState> = emptyList(),
-)
-
-private val StoryCardColorScheme = darkColorScheme(
-    primary = Color.White,
-    onPrimary = Color.Black,
-    background = Color.Black,
-    onBackground = Color.White,
-    surface = Color(0xFF121214),
-    onSurface = Color.White,
-    surfaceVariant = Color(0xFF1E1E22),
-    onSurfaceVariant = Color(0xFFAEAEB8),
-    surfaceContainerLowest = Color(0xFF121215),
-    surfaceContainer = Color(0xFF18181C),
-    surfaceContainerHigh = Color(0xFF202026),
-    surfaceContainerHighest = Color(0xFF282830),
-    outlineVariant = Color(0xFF383842),
 )
 
 private fun RecapShareData.sanitized(hideDetails: Boolean): RecapShareData {
@@ -137,43 +122,41 @@ fun ReaderIdShareCard(
         monthLabel = effective.monthLabel,
         modifier = modifier,
     ) {
-        MaterialTheme(colorScheme = StoryCardColorScheme) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(ID_CARD_ASPECT)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                        RoundedCornerShape(22.dp),
+                    ),
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(ID_CARD_ASPECT)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                            RoundedCornerShape(22.dp),
-                        ),
-                ) {
-                    MochikuIdCardFrontContent(
-                        username = effective.username,
-                        photoPath = avatarPath,
-                        cardNumber = effective.cardNumber,
-                        joinedDate = effective.joinedDate,
-                        onEditProfileClick = null,
-                        hintText = "MOCHIKU PASSPORT",
-                        disableHardwareBitmap = true,
-                        onAvatarSettled = { avatarLoaded = true },
-                        recentStamps = effective.unlockedStamps,
-                    )
-                }
-
-                StorySummaryStrip(
-                    chaptersRead = effective.chaptersRead,
-                    durationFormatted = effective.durationFormatted,
-                    libraryCount = effective.libraryCount,
+                MochikuIdCardFrontContent(
+                    username = effective.username,
+                    photoPath = avatarPath,
+                    cardNumber = effective.cardNumber,
+                    joinedDate = effective.joinedDate,
+                    onEditProfileClick = null,
+                    hintText = "MOCHIKU PASSPORT",
+                    disableHardwareBitmap = true,
+                    onAvatarSettled = { avatarLoaded = true },
+                    recentStamps = effective.unlockedStamps,
                 )
             }
+
+            StorySummaryStrip(
+                chaptersRead = effective.chaptersRead,
+                durationFormatted = effective.durationFormatted,
+                libraryCount = effective.libraryCount,
+            )
         }
     }
 }
@@ -200,41 +183,39 @@ fun BarcodeShareCard(
         monthLabel = effective.monthLabel,
         modifier = modifier,
     ) {
-        MaterialTheme(colorScheme = StoryCardColorScheme) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(ID_CARD_ASPECT)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                        RoundedCornerShape(22.dp),
+                    ),
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(ID_CARD_ASPECT)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                            RoundedCornerShape(22.dp),
-                        ),
-                ) {
-                    MochikuIdCardBackContent(
-                        cardNumber = effective.cardNumber,
-                        username = effective.username,
-                        isScanning = false,
-                        isVerified = false,
-                        barcodePayload = barcodePayload,
-                        barcodeLabel = barcodeLabel,
-                        statusText = "${effective.chaptersRead} CHAPTERS VERIFIED",
-                    )
-                }
-
-                StorySummaryStrip(
-                    chaptersRead = effective.chaptersRead,
-                    durationFormatted = effective.durationFormatted,
-                    libraryCount = effective.libraryCount,
+                MochikuIdCardBackContent(
+                    cardNumber = effective.cardNumber,
+                    username = effective.username,
+                    isScanning = false,
+                    isVerified = false,
+                    barcodePayload = barcodePayload,
+                    barcodeLabel = barcodeLabel,
+                    statusText = "${effective.chaptersRead} CHAPTERS VERIFIED",
                 )
             }
+
+            StorySummaryStrip(
+                chaptersRead = effective.chaptersRead,
+                durationFormatted = effective.durationFormatted,
+                libraryCount = effective.libraryCount,
+            )
         }
     }
 }
@@ -249,71 +230,70 @@ fun StampsShareCard(
     val earnedStamps = remember(effective.unlockedStamps) {
         effective.unlockedStamps.filter { it.isUnlocked }
     }
+    val colorScheme = MaterialTheme.colorScheme
 
     StoryCardShell(
         monthLabel = effective.monthLabel,
         modifier = modifier,
     ) {
-        MaterialTheme(colorScheme = StoryCardColorScheme) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = StoryCardColorScheme.surface,
-                border = BorderStroke(1.dp, StoryCardColorScheme.outlineVariant),
-                modifier = Modifier.fillMaxWidth(),
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = colorScheme.surfaceContainer,
+            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.55f)),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "${effective.username.uppercase()}'S STAMPS",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.5.sp,
-                            color = StoryCardColorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "${earnedStamps.size} / ${PassportStamp.entries.size} MILESTONES",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = StoryCardColorScheme.onSurface,
-                        )
-                    }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${effective.username.uppercase()}'S STAMPS",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp,
+                        color = colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "${earnedStamps.size} / ${PassportStamp.entries.size} MILESTONES",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colorScheme.onSurface,
+                    )
+                }
 
-                    if (earnedStamps.isEmpty()) {
-                        Text(
-                            text = stringResource(KMR.strings.recap_share_stamps_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = FontFamily.Monospace,
-                            color = StoryCardColorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 28.dp),
-                        )
-                    } else {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            earnedStamps.chunked(3).forEach { rowStamps ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                ) {
-                                    rowStamps.forEach { state ->
-                                        PassportStampBadge(
-                                            state = state,
-                                            size = 84.dp,
-                                        )
-                                    }
+                if (earnedStamps.isEmpty()) {
+                    Text(
+                        text = stringResource(KMR.strings.recap_share_stamps_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontFamily = FontFamily.Monospace,
+                        color = colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 28.dp),
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        earnedStamps.chunked(3).forEach { rowStamps ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                            ) {
+                                rowStamps.forEach { state ->
+                                    PassportStampBadge(
+                                        state = state,
+                                        size = 84.dp,
+                                    )
                                 }
                             }
                         }
@@ -330,11 +310,29 @@ private fun StoryCardShell(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+    val backgroundColor = colorScheme.background
+    val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val labelColor = colorScheme.onSurfaceVariant
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(9f / 16f)
-            .background(Color.Black)
+            .background(backgroundColor)
+            .drawBehind {
+                val spacing = 28.dp.toPx()
+                val radius = 1.2.dp.toPx()
+                var x = spacing / 2f
+                while (x < size.width) {
+                    var y = spacing / 2f
+                    while (y < size.height) {
+                        drawCircle(dotColor, radius = radius, center = Offset(x, y))
+                        y += spacing
+                    }
+                    x += spacing
+                }
+            }
             .padding(horizontal = 20.dp, vertical = 26.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -344,7 +342,7 @@ private fun StoryCardShell(
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
-            color = Color(0xFF8E8E8E),
+            color = labelColor,
         )
 
         Spacer(Modifier.weight(1f))
@@ -357,7 +355,7 @@ private fun StoryCardShell(
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
-            color = Color(0xFF8E8E8E),
+            color = labelColor,
         )
     }
 }
@@ -368,10 +366,11 @@ private fun StorySummaryStrip(
     durationFormatted: String,
     libraryCount: Int,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFF121214),
-        border = BorderStroke(1.dp, Color(0xFF222226)),
+        color = colorScheme.surfaceContainer,
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.55f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -389,20 +388,21 @@ private fun StorySummaryStrip(
 
 @Composable
 private fun StoryStatMetric(value: String, label: String) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,
-            color = Color.White,
+            color = colorScheme.onSurface,
         )
         Text(
             text = label,
             fontFamily = FontFamily.Monospace,
             fontSize = 9.sp,
             letterSpacing = 1.sp,
-            color = Color(0xFF8E8E8E),
+            color = colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -568,26 +568,34 @@ private val SampleShareData = RecapShareData(
     ),
 )
 
-@Preview(widthDp = 360)
+@PreviewLightDark
 @Composable
 private fun ReceiptShareCardPreview() {
-    ReceiptShareCard(data = SampleShareData, hideDetails = false)
+    TachiyomiPreviewTheme {
+        ReceiptShareCard(data = SampleShareData, hideDetails = false)
+    }
 }
 
-@Preview(widthDp = 360)
+@PreviewLightDark
 @Composable
 private fun ReaderIdShareCardPreview() {
-    ReaderIdShareCard(data = SampleShareData, hideDetails = false)
+    TachiyomiPreviewTheme {
+        ReaderIdShareCard(data = SampleShareData, hideDetails = false)
+    }
 }
 
-@Preview(widthDp = 360)
+@PreviewLightDark
 @Composable
 private fun BarcodeShareCardPreview() {
-    BarcodeShareCard(data = SampleShareData, hideDetails = true)
+    TachiyomiPreviewTheme {
+        BarcodeShareCard(data = SampleShareData, hideDetails = true)
+    }
 }
 
-@Preview(widthDp = 360)
+@PreviewLightDark
 @Composable
 private fun StampsShareCardPreview() {
-    StampsShareCard(data = SampleShareData, hideDetails = false)
+    TachiyomiPreviewTheme {
+        StampsShareCard(data = SampleShareData, hideDetails = false)
+    }
 }

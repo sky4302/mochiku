@@ -40,7 +40,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.history.interactor.GetTotalReadDuration
+import tachiyomi.domain.history.model.StampState
 import tachiyomi.domain.manga.interactor.GetLibraryManga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -49,6 +52,7 @@ import uy.kohesive.injekt.api.get
 fun MochikuProfileHeader(
     onClickStats: () -> Unit,
     modifier: Modifier = Modifier,
+    recentStamps: ImmutableList<StampState> = persistentListOf(),
 ) {
     val context = LocalContext.current
     var username by remember { mutableStateOf(MochikuProfileStore.getUsername(context)) }
@@ -120,6 +124,7 @@ fun MochikuProfileHeader(
             joinedDate = joinedDate,
             onEditProfileClick = { showEditProfileDialog = true },
             onLaunchRecap = { showStoryRecapDialog = true },
+            recentStamps = recentStamps,
         )
 
         // Reading Time Card (Matches Mochy: "2h 9m Total Listening time | View Stats >")
@@ -218,6 +223,7 @@ fun MochikuProfileHeader(
             totalChaptersRead = displayChapters,
             libraryCount = displayLibraryCount,
             onDismissRequest = { showStoryRecapDialog = false },
+            recentStamps = recentStamps,
         )
     }
 }
