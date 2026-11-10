@@ -28,4 +28,41 @@ class HistoryPreferences(
         USE_PANORAMA_COVER_PREF,
         false,
     )
+
+    // KMK -->
+    fun rereadContinueState() = preferenceStore.getString(
+        "pref_continue_reading_reread_state",
+        "",
+    )
+
+    fun setRereadState(mangaId: Long, chapterId: Long, isCompleted: Boolean) {
+        rereadContinueState().set("$mangaId:$chapterId:$isCompleted")
+    }
+
+    fun clearRereadState() {
+        rereadContinueState().set("")
+    }
+
+    data class ContinueRereadState(
+        val mangaId: Long,
+        val chapterId: Long,
+        val isCompleted: Boolean,
+    )
+
+    companion object {
+        fun parseRereadState(raw: String): ContinueRereadState? {
+            if (raw.isBlank()) return null
+            val parts = raw.split(':')
+            if (parts.size != 3) return null
+            val mangaId = parts[0].toLongOrNull() ?: return null
+            val chapterId = parts[1].toLongOrNull() ?: return null
+            val isCompleted = parts[2].toBooleanStrictOrNull() ?: return null
+            return ContinueRereadState(
+                mangaId = mangaId,
+                chapterId = chapterId,
+                isCompleted = isCompleted,
+            )
+        }
+    }
+    // KMK <--
 }

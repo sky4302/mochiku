@@ -39,7 +39,7 @@ class KMKDomainModule : InjektModule {
         addFactory { DeleteLibraryUpdateErrors(get()) }
         addFactory { InsertLibraryUpdateErrors(get()) }
 
-        addFactory { GetContinueReading(get(), get()) }
+        addFactory { GetContinueReading(get(), get(), get(), get()) }
         addFactory { GetPassportStamps(get(), get(), get()) }
     }
 }

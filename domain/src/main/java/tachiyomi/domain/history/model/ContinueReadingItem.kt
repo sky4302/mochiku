@@ -12,4 +12,5 @@ data class ContinueReadingItem(
     val coverData: MangaCover,
     val chapter: Chapter,
     val lastReadAt: Long,
+    val resumePage: Int? = null,
 )

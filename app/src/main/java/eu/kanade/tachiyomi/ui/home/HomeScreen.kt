@@ -180,7 +180,12 @@ object HomeScreen : Screen() {
                         }
                         val onResumeContinueChapter: (ContinueReadingItem) -> Unit = { item ->
                             context.startActivity(
-                                ReaderActivity.newIntent(context, item.mangaId, item.chapter.id),
+                                ReaderActivity.newIntent(
+                                    context = context,
+                                    mangaId = item.mangaId,
+                                    chapterId = item.chapter.id,
+                                    page = item.resumePage,
+                                ),
                             )
                         }
                         // KMK <--

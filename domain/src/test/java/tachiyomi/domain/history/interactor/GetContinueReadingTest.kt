@@ -4,16 +4,26 @@ import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import tachiyomi.core.common.preference.Preference
+import tachiyomi.core.common.preference.PreferenceStore
+import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.domain.history.repository.HistoryRepository
+import tachiyomi.domain.history.service.HistoryPreferences
 import tachiyomi.domain.manga.model.MangaCover
 import java.util.Date
 
@@ -22,15 +32,40 @@ class GetContinueReadingTest {
 
     private lateinit var historyRepository: HistoryRepository
     private lateinit var getNextChapters: GetNextChapters
+    private lateinit var getChapter: GetChapter
+    private lateinit var historyPreferences: HistoryPreferences
     private lateinit var getContinueReading: GetContinueReading
 
     @BeforeEach
     fun beforeEach() {
         historyRepository = mockk()
         getNextChapters = mockk()
+        getChapter = mockk()
+        val rereadFlow = MutableStateFlow("")
+        val fakeStringPref = object : Preference<String> {
+            override fun key(): String = "pref_continue_reading_reread_state"
+            override fun get(): String = rereadFlow.value
+            override fun set(value: String) {
+                rereadFlow.value = value
+            }
+            override fun isSet(): Boolean = rereadFlow.value.isNotEmpty()
+            override fun delete() {
+                rereadFlow.value = ""
+            }
+            override fun defaultValue(): String = ""
+            override fun changes(): Flow<String> = rereadFlow
+            override fun stateIn(scope: CoroutineScope): StateFlow<String> =
+                rereadFlow.stateIn(scope, SharingStarted.Eagerly, rereadFlow.value)
+        }
+        val preferenceStore = mockk<PreferenceStore> {
+            every { getString(any(), any()) } returns fakeStringPref
+        }
+        historyPreferences = HistoryPreferences(preferenceStore)
         getContinueReading = GetContinueReading(
             historyRepository = historyRepository,
             getNextChapters = getNextChapters,
+            getChapter = getChapter,
+            historyPreferences = historyPreferences,
             dispatcher = UnconfinedTestDispatcher(),
         )
     }
@@ -126,6 +161,84 @@ class GetContinueReadingTest {
         )
         every { historyRepository.getHistory("", null, null, null) } returns flowOf(listOf(latest))
         coEvery { getNextChapters.await(30L, 305L, onlyUnread = false) } returns listOf(trailingRead)
+
+        val result = getContinueReading.subscribe().first()
+
+        result shouldBe null
+    }
+
+    @Test
+    fun `active mid-chapter reread emits current read chapter with resumePage`() = runTest {
+        val latest = mockHistoryEntry(
+            mangaId = 40L,
+            chapterId = 405L,
+            title = "Solo Leveling",
+            readAtMs = 15_000L,
+        )
+        val currentReadChapter = Chapter.create().copy(
+            id = 405L,
+            mangaId = 40L,
+            chapterNumber = 5.0,
+            read = true,
+            lastPageRead = 11L,
+        )
+        val nextReadChapter = Chapter.create().copy(
+            id = 406L,
+            mangaId = 40L,
+            chapterNumber = 6.0,
+            read = true,
+            lastPageRead = 24L,
+        )
+        every { historyRepository.getHistory("", null, null, null) } returns flowOf(listOf(latest))
+        coEvery { getNextChapters.await(40L, 405L, onlyUnread = false) } returns listOf(nextReadChapter)
+        coEvery { getChapter.await(405L) } returns currentReadChapter
+        historyPreferences.setRereadState(mangaId = 40L, chapterId = 405L, isCompleted = false)
+
+        val result = getContinueReading.subscribe().first()
+
+        result?.mangaId shouldBe 40L
+        result?.chapter shouldBe currentReadChapter
+        result?.resumePage shouldBe 11
+    }
+
+    @Test
+    fun `completed reread chapter advances to next chapter starting at page 0`() = runTest {
+        val latest = mockHistoryEntry(
+            mangaId = 40L,
+            chapterId = 405L,
+            title = "Solo Leveling",
+            readAtMs = 16_000L,
+        )
+        val nextReadChapter = Chapter.create().copy(
+            id = 406L,
+            mangaId = 40L,
+            chapterNumber = 6.0,
+            read = true,
+            lastPageRead = 24L,
+        )
+        every { historyRepository.getHistory("", null, null, null) } returns flowOf(listOf(latest))
+        coEvery { getNextChapters.await(40L, 405L, onlyUnread = false) } returns listOf(nextReadChapter)
+        historyPreferences.setRereadState(mangaId = 40L, chapterId = 405L, isCompleted = true)
+
+        val result = getContinueReading.subscribe().first()
+
+        result?.mangaId shouldBe 40L
+        result?.chapter?.id shouldBe 406L
+        result?.chapter?.lastPageRead shouldBe 0L
+        result?.resumePage shouldBe 0
+    }
+
+    @Test
+    fun `completed reread on final chapter emits null`() = runTest {
+        val latest = mockHistoryEntry(
+            mangaId = 40L,
+            chapterId = 500L,
+            title = "Solo Leveling",
+            readAtMs = 17_000L,
+        )
+        every { historyRepository.getHistory("", null, null, null) } returns flowOf(listOf(latest))
+        coEvery { getNextChapters.await(40L, 500L, onlyUnread = false) } returns emptyList()
+        historyPreferences.setRereadState(mangaId = 40L, chapterId = 500L, isCompleted = true)
 
         val result = getContinueReading.subscribe().first()
 

@@ -84,16 +84,15 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.21
-          name: Mochiku v1.14.21
+          tag_name: v1.14.22
+          name: Mochiku v1.14.22
           body: |
-            ### Mochiku (餅ク) v1.14.21 - Dynamic Theme Share Recap & Mini-Stamps Sync
+            ### Mochiku (餅ク) v1.14.22 - Continue-Reading Bar Re-Read Support
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.21:**
-            - **Dynamic Share Recap Theme**: Updated all 9:16 Share Recap story cards (Receipt, Reader ID, Barcode, and Stamps) to follow your active `MaterialTheme.colorScheme` (Light, Dark, Lavender, Peach, Material You, etc.) instead of a hardcoded black card palette.
-            - **Mini-Stamps on More Tab & Story Conclusion**: Wired live `GetPassportStamps` into the **More** tab Reader ID card and added earned mini-stamps inside Story Recap Slide 8's minimalist preview card.
-            - **Story Headline Spacing Fix**: Fixed overlapping multi-line text (`"That's your <Month> recap!"`) on Slide 8 and other large headings in Story Recap by adding explicit proportional `lineHeight`.
+            **What's New in v1.14.22:**
+            - **Re-Read Support Without Resetting Read Checkmarks**: Re-opening any already-read chapter inside a completed series now activates session tracking in `HistoryPreferences`, showing that chapter + saved page (`lastPageRead + 1`) on the floating Continue-Reading Bar.
+            - **Exact Page Resume & Smart Chapter Advance**: Tapping Play passes the exact 0-indexed `page` extra to `ReaderActivity` so `ChapterLoader` resumes the exact page you stopped on; reaching the final page cleanly advances to `Ch. N+1 · Page 1` (or hides the bar automatically once you finish the final chapter).
             
             ---
             ### Download Links (Choose for your phone):

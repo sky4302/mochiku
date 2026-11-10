@@ -94,6 +94,7 @@ import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.history.interactor.UpsertHistory
 import tachiyomi.domain.history.model.HistoryUpdate
+import tachiyomi.domain.history.service.HistoryPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
@@ -138,6 +139,9 @@ class ReaderViewModel @JvmOverloads constructor(
     private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
     private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId = Injekt.get(),
     // SY <--
+    // KMK -->
+    private val historyPreferences: HistoryPreferences = Injekt.get(),
+    // KMK <--
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(State())
@@ -822,6 +826,9 @@ class ReaderViewModel @JvmOverloads constructor(
         chapterPageIndex = pageIndex
 
         if (!incognitoMode && page.status !is Page.State.Error) {
+            val wasAlreadyRead = readerChapter.chapter.read
+            val targetMangaId = manga?.id ?: readerChapter.chapter.manga_id
+            val chapterId = readerChapter.chapter.id!!
             readerChapter.chapter.last_page_read = pageIndex
 
             if (readerChapter.pages?.lastIndex == pageIndex ||
@@ -830,6 +837,20 @@ class ReaderViewModel @JvmOverloads constructor(
                 // SY <--
             ) {
                 updateChapterProgressOnComplete(readerChapter)
+                // KMK -->
+                val currentReread = HistoryPreferences.parseRereadState(
+                    historyPreferences.rereadContinueState().get(),
+                )
+                if (wasAlreadyRead || currentReread?.mangaId == targetMangaId) {
+                    historyPreferences.setRereadState(
+                        mangaId = targetMangaId,
+                        chapterId = chapterId,
+                        isCompleted = true,
+                    )
+                } else {
+                    historyPreferences.clearRereadState()
+                }
+                // KMK <--
 
                 // SY -->
                 // Check if syncing is enabled for chapter read:
@@ -837,6 +858,23 @@ class ReaderViewModel @JvmOverloads constructor(
                     SyncDataJob.startNow(Injekt.get<Application>())
                 }
                 // SY <--
+            } else if (wasAlreadyRead) {
+                // KMK -->
+                historyPreferences.setRereadState(
+                    mangaId = targetMangaId,
+                    chapterId = chapterId,
+                    isCompleted = false,
+                )
+                // KMK <--
+            } else {
+                // KMK -->
+                val currentReread = HistoryPreferences.parseRereadState(
+                    historyPreferences.rereadContinueState().get(),
+                )
+                if (currentReread?.mangaId == targetMangaId && currentReread.chapterId == chapterId) {
+                    historyPreferences.clearRereadState()
+                }
+                // KMK <--
             }
 
             updateChapter.await(
