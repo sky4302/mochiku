@@ -827,7 +827,7 @@ class ReaderViewModel @JvmOverloads constructor(
 
         if (!incognitoMode && page.status !is Page.State.Error) {
             val wasAlreadyRead = readerChapter.chapter.read
-            val targetMangaId = manga?.id ?: readerChapter.chapter.manga_id
+            val targetMangaId = manga?.id ?: readerChapter.chapter.manga_id ?: -1L
             val chapterId = readerChapter.chapter.id!!
             readerChapter.chapter.last_page_read = pageIndex
 
@@ -838,17 +838,19 @@ class ReaderViewModel @JvmOverloads constructor(
             ) {
                 updateChapterProgressOnComplete(readerChapter)
                 // KMK -->
-                val currentReread = HistoryPreferences.parseRereadState(
-                    historyPreferences.rereadContinueState().get(),
-                )
-                if (wasAlreadyRead || currentReread?.mangaId == targetMangaId) {
-                    historyPreferences.setRereadState(
-                        mangaId = targetMangaId,
-                        chapterId = chapterId,
-                        isCompleted = true,
+                if (targetMangaId > 0L) {
+                    val currentReread = HistoryPreferences.parseRereadState(
+                        historyPreferences.rereadContinueState().get(),
                     )
-                } else {
-                    historyPreferences.clearRereadState()
+                    if (wasAlreadyRead || currentReread?.mangaId == targetMangaId) {
+                        historyPreferences.setRereadState(
+                            mangaId = targetMangaId,
+                            chapterId = chapterId,
+                            isCompleted = true,
+                        )
+                    } else {
+                        historyPreferences.clearRereadState()
+                    }
                 }
                 // KMK <--
 
@@ -860,13 +862,15 @@ class ReaderViewModel @JvmOverloads constructor(
                 // SY <--
             } else if (wasAlreadyRead) {
                 // KMK -->
-                historyPreferences.setRereadState(
-                    mangaId = targetMangaId,
-                    chapterId = chapterId,
-                    isCompleted = false,
-                )
+                if (targetMangaId > 0L) {
+                    historyPreferences.setRereadState(
+                        mangaId = targetMangaId,
+                        chapterId = chapterId,
+                        isCompleted = false,
+                    )
+                }
                 // KMK <--
-            } else {
+            } else if (targetMangaId > 0L) {
                 // KMK -->
                 val currentReread = HistoryPreferences.parseRereadState(
                     historyPreferences.rereadContinueState().get(),
