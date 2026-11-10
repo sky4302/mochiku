@@ -238,4 +238,13 @@
     <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
     <string name="pref_discord_show_discord_button">Show Discord Button</string>
     <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
+    <!-- Mochiku Recap Share -->
+    <string name="recap_share_title">Share Recap</string>
+    <string name="recap_share_hide_details">Hide my name and titles</string>
+    <string name="recap_share_card_receipt">Receipt</string>
+    <string name="recap_share_card_id">Reader ID</string>
+    <string name="recap_share_card_barcode">Barcode</string>
+    <string name="recap_share_loading_images">Loading images…</string>
+    <string name="recap_share_failed">Failed to export recap image</string>
+    <string name="action_share_recap">Share</string>
 </resources>

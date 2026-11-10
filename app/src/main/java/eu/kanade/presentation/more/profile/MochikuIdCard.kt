@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -60,10 +61,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private const val IdCardAspect = 1.89f
+// KMK -->
+internal const val ID_CARD_ASPECT = 1.89f
+// KMK <--
 
 @Composable
 fun MochikuIdCard(
@@ -111,7 +116,7 @@ fun MochikuIdCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(IdCardAspect)
+            .aspectRatio(ID_CARD_ASPECT)
             .graphicsLayer {
                 rotationY = rotation
                 cameraDistance = 14f * density.density
@@ -138,14 +143,15 @@ fun MochikuIdCard(
     ) {
         if (rotation <= 90f) {
             // Front Side
-            IdCardFront(
+            // KMK -->
+            MochikuIdCardFrontContent(
                 username = username,
                 photoPath = photoPath,
                 cardNumber = cardNumber,
                 joinedDate = joinedDate,
                 onEditProfileClick = onEditProfileClick,
-                onFlipClick = { isFlipped = true },
             )
+            // KMK <--
         } else {
             // Back Side (mirrored so text reads correctly)
             Box(
@@ -153,29 +159,40 @@ fun MochikuIdCard(
                     .fillMaxSize()
                     .graphicsLayer { rotationY = 180f },
             ) {
-                IdCardBack(
+                // KMK -->
+                MochikuIdCardBackContent(
                     cardNumber = cardNumber,
                     username = username,
                     isScanning = isScanning,
                     isVerified = isVerified,
                     scanProgress = laserProgress.value,
-                    onScanClick = { triggerScanAndRecap() },
-                    onFlipBack = { isFlipped = false },
                 )
+                // KMK <--
             }
         }
     }
 }
 
+// KMK -->
 @Composable
-private fun IdCardFront(
+internal fun MochikuIdCardFrontContent(
     username: String,
     photoPath: String?,
     cardNumber: String,
     joinedDate: String,
-    onEditProfileClick: () -> Unit,
-    onFlipClick: () -> Unit,
+    onEditProfileClick: (() -> Unit)? = null,
+    hintText: String? = "TAP CARD TO FLIP >",
+    ribbonText: String = "$username's CARD",
+    disableHardwareBitmap: Boolean = false,
+    onAvatarSettled: (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
+    val editableModifier = if (onEditProfileClick != null) {
+        Modifier.clickable(onClick = onEditProfileClick)
+    } else {
+        Modifier
+    }
+
     Row(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -188,7 +205,7 @@ private fun IdCardFront(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.clickable(onClick = onEditProfileClick),
+                modifier = editableModifier,
             ) {
                 Text(
                     text = "PROFILE USR#$cardNumber",
@@ -197,12 +214,14 @@ private fun IdCardFront(
                     fontSize = 10.5.sp,
                     maxLines = 1,
                 )
-                Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = "Edit Profile",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(11.dp),
-                )
+                if (onEditProfileClick != null) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = "Edit Profile",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(11.dp),
+                    )
+                }
             }
 
             // Middle Avatar + Name + Join date
@@ -217,14 +236,22 @@ private fun IdCardFront(
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
-                        .clickable(onClick = onEditProfileClick),
+                        .then(editableModifier),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (photoPath != null) {
+                        val imageModel = remember(photoPath, disableHardwareBitmap) {
+                            ImageRequest.Builder(context)
+                                .data(photoPath)
+                                .apply { if (disableHardwareBitmap) allowHardware(false) }
+                                .build()
+                        }
                         AsyncImage(
-                            model = photoPath,
+                            model = imageModel,
                             contentDescription = "Profile Picture",
                             contentScale = ContentScale.Crop,
+                            onSuccess = { onAvatarSettled?.invoke() },
+                            onError = { onAvatarSettled?.invoke() },
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {
@@ -251,7 +278,7 @@ private fun IdCardFront(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.clickable(onClick = onEditProfileClick),
+                        modifier = editableModifier,
                     ) {
                         Text(
                             text = username,
@@ -260,13 +287,16 @@ private fun IdCardFront(
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = "Edit Name",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(13.dp),
-                        )
+                        if (onEditProfileClick != null) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = "Edit Name",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(13.dp),
+                            )
+                        }
                     }
 
                     Text(
@@ -279,38 +309,50 @@ private fun IdCardFront(
             }
 
             // Bottom hint
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "TAP CARD TO FLIP >",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                )
+            if (hintText != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = hintText,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontSize = 9.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            } else {
+                Spacer(Modifier.height(4.dp))
             }
         }
 
         // Vertical Ribbon Strip on Right
-        MarqueeRibbon(text = "$username's CARD")
+        MarqueeRibbon(text = ribbonText)
     }
 }
 
 @Composable
-private fun IdCardBack(
+internal fun MochikuIdCardBackContent(
     cardNumber: String,
     username: String,
-    isScanning: Boolean,
-    isVerified: Boolean,
-    scanProgress: Float,
-    onScanClick: () -> Unit,
-    onFlipBack: () -> Unit,
+    isScanning: Boolean = false,
+    isVerified: Boolean = false,
+    scanProgress: Float = 0f,
+    barcodePayload: String = "MFY2026-11 $cardNumber",
+    barcodeLabel: String = "MFY 2026 - 11  ${cardNumber.takeLast(8).chunked(4).joinToString(" ")}",
+    statusText: String? = if (isVerified) {
+        "OPENING RECAP..."
+    } else if (isScanning) {
+        "SCANNING BARCODE..."
+    } else {
+        "TAP TO SCAN & UNLOCK RECAP"
+    },
+    ribbonText: String = "$username's CARD",
 ) {
-    val barcodeBits = remember(cardNumber) {
-        Code128Encoder.encode("MFY2026-11 $cardNumber")
+    val barcodeBits = remember(barcodePayload) {
+        Code128Encoder.encode(barcodePayload)
     }
     val barcodeBarColor = MaterialTheme.colorScheme.onSurface
 
@@ -387,29 +429,32 @@ private fun IdCardBack(
                 Spacer(Modifier.height(6.dp))
 
                 Text(
-                    text = "MFY 2026 - 11  ${cardNumber.takeLast(8).chunked(4).joinToString(" ")}",
+                    text = barcodeLabel,
                     color = if (isVerified) Color(0xFF52FF7A) else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                 )
 
-                Spacer(Modifier.height(4.dp))
+                if (statusText != null) {
+                    Spacer(Modifier.height(4.dp))
 
-                Text(
-                    text = if (isVerified) "OPENING RECAP..." else if (isScanning) "SCANNING BARCODE..." else "TAP TO SCAN & UNLOCK RECAP",
-                    color = if (isVerified || isScanning) Color(0xFF52FF7A) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.ExtraBold,
-                )
+                    Text(
+                        text = statusText,
+                        color = if (isVerified || isScanning) Color(0xFF52FF7A) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                        fontSize = 9.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                }
             }
         }
 
         // Vertical Ribbon Strip on Right
-        MarqueeRibbon(text = "$username's CARD")
+        MarqueeRibbon(text = ribbonText)
     }
 }
+// KMK <--
 
 @Composable
 private fun MarqueeRibbon(text: String) {

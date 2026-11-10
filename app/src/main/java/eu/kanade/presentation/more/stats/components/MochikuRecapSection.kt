@@ -15,49 +15,51 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Receipt
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.runtime.produceState
-import androidx.compose.ui.text.style.TextOverflow
 import eu.kanade.presentation.more.profile.MochikuEditProfileDialog
 import eu.kanade.presentation.more.profile.MochikuIdCard
 import eu.kanade.presentation.more.profile.MochikuProfileStore
 import eu.kanade.presentation.more.profile.MochikuRecapData
 import eu.kanade.presentation.more.profile.MochikuRecapDataEngine
 import eu.kanade.presentation.more.profile.MochikuStoryRecapDialog
+import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
+import tachiyomi.presentation.core.i18n.stringResource
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
  * Mochiku Manga Recap & Otaku Passport Gimmick Component (adapted from Mochy-Music).
@@ -79,6 +81,9 @@ fun MochikuRecapSection(
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showReceiptDialog by remember { mutableStateOf(false) }
     var showStoryDialog by remember { mutableStateOf(false) }
+    // KMK -->
+    var shareInitialPage by remember { mutableStateOf<Int?>(null) }
+    // KMK <--
 
     // Load real reading history for current month
     val recapData by produceState<MochikuRecapData?>(initialValue = null) {
@@ -87,6 +92,41 @@ fun MochikuRecapSection(
     val effectiveChapters = recapData?.monthChaptersRead ?: totalChaptersRead
     val effectiveDuration = recapData?.monthDurationFormatted ?: readDuration
     val effectiveLibrary = recapData?.libraryCount ?: libraryCount
+
+    // KMK -->
+    val shareData = remember(
+        recapData,
+        username,
+        photoPath,
+        cardNumber,
+        joinedDate,
+        effectiveChapters,
+        effectiveDuration,
+        effectiveLibrary,
+    ) {
+        val now = LocalDate.now()
+        val monthName = recapData?.monthName ?: now.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+        val year = recapData?.year ?: now.year
+        RecapShareData(
+            monthLabel = "$monthName $year",
+            yearMonthCode = String.format(Locale.US, "%d-%02d", year, now.monthValue),
+            username = username,
+            photoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            chaptersRead = effectiveChapters,
+            durationFormatted = effectiveDuration,
+            libraryCount = effectiveLibrary,
+            topMangaList = recapData?.topMangaList?.map {
+                RecapShareMangaRow(
+                    title = it.title,
+                    durationFormatted = it.durationFormatted,
+                    chaptersRead = it.chaptersRead,
+                )
+            }.orEmpty(),
+        )
+    }
+    // KMK <--
 
     val minChaptersRequired = 10
     val unlockProgress = (effectiveChapters.toFloat() / minChaptersRequired).coerceIn(0f, 1f)
@@ -198,6 +238,15 @@ fun MochikuRecapSection(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    // KMK -->
+                    IconButton(onClick = { shareInitialPage = 1 }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = stringResource(KMR.strings.action_share_recap),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    // KMK <--
                 }
 
                 // Unlock Progress Bar
@@ -350,144 +399,71 @@ fun MochikuRecapSection(
     // Vintage Thermal Paper Receipt Dialog with serrated edge
     if (showReceiptDialog) {
         Dialog(onDismissRequest = { showReceiptDialog = false }) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .drawBehind {
-                        val teethCount = 14
-                        val teethHeight = 12.dp.toPx()
-                        val path = Path().apply {
-                            moveTo(0f, 0f)
-                            lineTo(size.width, 0f)
-                            lineTo(size.width, size.height - teethHeight)
-                            val toothWidth = size.width / teethCount
-                            for (i in teethCount downTo 1) {
-                                val midX = (i - 0.5f) * toothWidth
-                                val startX = (i - 1) * toothWidth
-                                lineTo(midX, size.height)
-                                lineTo(startX, size.height - teethHeight)
-                            }
-                            close()
-                        }
-                        drawPath(path, color = Color(0xFFF6F6F4))
-                        drawPath(path, color = Color(0x2B000000), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
-                    }
-                    .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp),
+            // KMK -->
+            MochikuThermalReceiptPaper(
+                username = username,
+                cardNumberSuffix = cardNumber.takeLast(4),
+                topMangaList = shareData.topMangaList,
+                chaptersRead = effectiveChapters,
+                durationFormatted = effectiveDuration,
+                modifier = Modifier.fillMaxWidth(0.92f),
             ) {
-                Column(
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        text = "MOCHIKU MANGA MART",
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 15.sp,
-                        color = Color.Black,
-                    )
-                    Text(
-                        text = "✦ 餅ク · FRESH STORIES DAILY ✦",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp,
-                        color = Color(0xFF555555),
-                    )
-                    Text(
-                        text = "--------------------------------------",
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF888888),
-                    )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("READER: $username", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.Black)
-                        Text("TXN: #${cardNumber.takeLast(4)}", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = Color.Black)
-                    }
-                    Text(
-                        text = "--------------------------------------",
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF888888),
-                    )
-
-                    if (recapData != null && recapData!!.topMangaList.isNotEmpty()) {
-                        recapData!!.topMangaList.take(8).forEachIndexed { i, item ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = "${i + 1}x ${item.title}",
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 10.5.sp,
-                                    color = Color(0xFF222222),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    text = "- ${item.durationFormatted}",
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF444444),
-                                )
-                            }
-                        }
-                    } else {
+                    OutlinedButton(
+                        onClick = { showReceiptDialog = false },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Black.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f),
+                    ) {
                         Text(
-                            text = "No reading history recorded this month.",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            color = Color(0xFF666666),
+                            text = stringResource(MR.strings.action_close),
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            softWrap = false,
                         )
                     }
-
-                    Text(
-                        text = "--------------------------------------",
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF888888),
-                    )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("TOTAL CHAPTERS:", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Black)
-                        Text("$effectiveChapters", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.Black)
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("READ DURATION:", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Black)
-                        Text(effectiveDuration, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color.Black)
-                    }
-                    Text(
-                        text = "--------------------------------------",
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF888888),
-                    )
-                    Text(
-                        text = "END OF LINE",
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 12.sp,
-                        color = Color.Black,
-                    )
-                    Text(
-                        text = "||||||| | ||||| |||| | ||||||||",
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
                     Button(
-                        onClick = { showReceiptDialog = false },
+                        onClick = {
+                            showReceiptDialog = false
+                            shareInitialPage = 0
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.weight(1f),
                     ) {
-                        Text("Close Receipt", fontSize = 12.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(KMR.strings.action_share_recap),
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
                     }
                 }
             }
+            // KMK <--
         }
     }
+
+    // KMK -->
+    if (shareInitialPage != null) {
+        RecapSharePreviewDialog(
+            data = shareData,
+            initialPage = shareInitialPage!!,
+            onDismissRequest = { shareInitialPage = null },
+        )
+    }
+    // KMK <--
 
     // Fullscreen Story Dialog
     if (showStoryDialog) {
