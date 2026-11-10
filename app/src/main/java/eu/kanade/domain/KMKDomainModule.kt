@@ -4,6 +4,7 @@ import tachiyomi.data.libraryUpdateError.LibraryUpdateErrorRepositoryImpl
 import tachiyomi.data.libraryUpdateError.LibraryUpdateErrorWithRelationsRepositoryImpl
 import tachiyomi.data.libraryUpdateErrorMessage.LibraryUpdateErrorMessageRepositoryImpl
 import tachiyomi.domain.history.interactor.GetContinueReading
+import tachiyomi.domain.history.interactor.GetPassportStamps
 import tachiyomi.domain.libraryUpdateError.interactor.DeleteLibraryUpdateErrors
 import tachiyomi.domain.libraryUpdateError.interactor.GetLibraryUpdateErrorWithRelations
 import tachiyomi.domain.libraryUpdateError.interactor.GetLibraryUpdateErrors
@@ -39,5 +40,6 @@ class KMKDomainModule : InjektModule {
         addFactory { InsertLibraryUpdateErrors(get()) }
 
         addFactory { GetContinueReading(get(), get()) }
+        addFactory { GetPassportStamps(get(), get(), get()) }
     }
 }

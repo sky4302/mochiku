@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,10 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.more.profile.ID_CARD_ASPECT
 import eu.kanade.presentation.more.profile.MochikuIdCardBackContent
 import eu.kanade.presentation.more.profile.MochikuIdCardFrontContent
+import tachiyomi.domain.history.model.PassportStamp
+import tachiyomi.domain.history.model.StampState
+import tachiyomi.i18n.kmk.KMR
+import tachiyomi.presentation.core.i18n.stringResource
 
 data class RecapShareMangaRow(
     val title: String,
@@ -60,6 +65,7 @@ data class RecapShareData(
     val durationFormatted: String,
     val libraryCount: Int,
     val topMangaList: List<RecapShareMangaRow>,
+    val unlockedStamps: List<StampState> = emptyList(),
 )
 
 private val StoryCardColorScheme = darkColorScheme(
@@ -158,6 +164,7 @@ fun ReaderIdShareCard(
                         hintText = "MOCHIKU PASSPORT",
                         disableHardwareBitmap = true,
                         onAvatarSettled = { avatarLoaded = true },
+                        recentStamps = effective.unlockedStamps,
                     )
                 }
 
@@ -227,6 +234,91 @@ fun BarcodeShareCard(
                     durationFormatted = effective.durationFormatted,
                     libraryCount = effective.libraryCount,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun StampsShareCard(
+    data: RecapShareData,
+    hideDetails: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val effective = data.sanitized(hideDetails)
+    val earnedStamps = remember(effective.unlockedStamps) {
+        effective.unlockedStamps.filter { it.isUnlocked }
+    }
+
+    StoryCardShell(
+        monthLabel = effective.monthLabel,
+        modifier = modifier,
+    ) {
+        MaterialTheme(colorScheme = StoryCardColorScheme) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = StoryCardColorScheme.surface,
+                border = BorderStroke(1.dp, StoryCardColorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${effective.username.uppercase()}'S STAMPS",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp,
+                            color = StoryCardColorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "${earnedStamps.size} / ${PassportStamp.entries.size} MILESTONES",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = StoryCardColorScheme.onSurface,
+                        )
+                    }
+
+                    if (earnedStamps.isEmpty()) {
+                        Text(
+                            text = stringResource(KMR.strings.recap_share_stamps_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = FontFamily.Monospace,
+                            color = StoryCardColorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 28.dp),
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            earnedStamps.chunked(3).forEach { rowStamps ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                ) {
+                                    rowStamps.forEach { state ->
+                                        PassportStampBadge(
+                                            state = state,
+                                            size = 84.dp,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -469,6 +561,11 @@ private val SampleShareData = RecapShareData(
         RecapShareMangaRow("Sakamoto Days", "1h 45m", 12),
         RecapShareMangaRow("Kagurabachi", "1h 12m", 9),
     ),
+    unlockedStamps = listOf(
+        StampState(PassportStamp.FIRST_PAGE, 1, 1, unlockedAt = 1_794_300_000_000L, isSeen = true),
+        StampState(PassportStamp.BOOKWORM_100, 100, 100, unlockedAt = 1_794_310_000_000L, isSeen = true),
+        StampState(PassportStamp.STREAK_7, 7, 7, unlockedAt = 1_794_320_000_000L, isSeen = true),
+    ),
 )
 
 @Preview(widthDp = 360)
@@ -487,4 +584,10 @@ private fun ReaderIdShareCardPreview() {
 @Composable
 private fun BarcodeShareCardPreview() {
     BarcodeShareCard(data = SampleShareData, hideDetails = true)
+}
+
+@Preview(widthDp = 360)
+@Composable
+private fun StampsShareCardPreview() {
+    StampsShareCard(data = SampleShareData, hideDetails = false)
 }

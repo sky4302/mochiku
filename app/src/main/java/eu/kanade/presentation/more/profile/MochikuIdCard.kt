@@ -63,8 +63,10 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
+import eu.kanade.presentation.more.stats.components.PassportStampBadge
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import tachiyomi.domain.history.model.StampState
 
 // KMK -->
 internal const val ID_CARD_ASPECT = 1.89f
@@ -79,6 +81,9 @@ fun MochikuIdCard(
     onEditProfileClick: () -> Unit,
     onLaunchRecap: () -> Unit,
     modifier: Modifier = Modifier,
+    // KMK -->
+    recentStamps: List<StampState> = emptyList(),
+    // KMK <--
 ) {
     var isFlipped by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -150,6 +155,7 @@ fun MochikuIdCard(
                 cardNumber = cardNumber,
                 joinedDate = joinedDate,
                 onEditProfileClick = onEditProfileClick,
+                recentStamps = recentStamps,
             )
             // KMK <--
         } else {
@@ -185,6 +191,7 @@ internal fun MochikuIdCardFrontContent(
     ribbonText: String = "$username's CARD",
     disableHardwareBitmap: Boolean = false,
     onAvatarSettled: (() -> Unit)? = null,
+    recentStamps: List<StampState> = emptyList(),
 ) {
     val context = LocalContext.current
     val editableModifier = if (onEditProfileClick != null) {
@@ -193,138 +200,168 @@ internal fun MochikuIdCardFrontContent(
         Modifier
     }
 
+    val latestMiniStamps = remember(recentStamps) {
+        recentStamps
+            .filter { it.isUnlocked }
+            .sortedByDescending { it.unlockedAt ?: 0L }
+            .take(3)
+    }
+
     Row(modifier = Modifier.fillMaxSize()) {
-        Column(
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxHeight()
-                .padding(start = 18.dp, top = 16.dp, end = 12.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .fillMaxHeight(),
         ) {
-            // Top User ID row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = editableModifier,
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 18.dp, top = 16.dp, end = 12.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = "PROFILE USR#$cardNumber",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.5.sp,
-                    maxLines = 1,
-                )
-                if (onEditProfileClick != null) {
-                    Icon(
-                        imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Edit Profile",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(11.dp),
-                    )
-                }
-            }
-
-            // Middle Avatar + Name + Join date
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                // Round Avatar
-                Box(
-                    modifier = Modifier
-                        .size(76.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                        .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
-                        .then(editableModifier),
-                    contentAlignment = Alignment.Center,
+                // Top User ID row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = editableModifier,
                 ) {
-                    if (photoPath != null) {
-                        val imageModel = remember(photoPath, disableHardwareBitmap) {
-                            ImageRequest.Builder(context)
-                                .data(photoPath)
-                                .apply { if (disableHardwareBitmap) allowHardware(false) }
-                                .build()
-                        }
-                        AsyncImage(
-                            model = imageModel,
-                            contentDescription = "Profile Picture",
-                            contentScale = ContentScale.Crop,
-                            onSuccess = { onAvatarSettled?.invoke() },
-                            onError = { onAvatarSettled?.invoke() },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else {
+                    Text(
+                        text = "PROFILE USR#$cardNumber",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.5.sp,
+                        maxLines = 1,
+                    )
+                    if (onEditProfileClick != null) {
                         Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = "Profile Picture",
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Edit Profile",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(34.dp),
+                            modifier = Modifier.size(11.dp),
                         )
                     }
                 }
 
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                // Middle Avatar + Name + Join date
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text(
-                        text = "ID CARD OF",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 9.sp,
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = editableModifier,
+                    // Round Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
+                            .then(editableModifier),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = username,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                        if (onEditProfileClick != null) {
+                        if (photoPath != null) {
+                            val imageModel = remember(photoPath, disableHardwareBitmap) {
+                                ImageRequest.Builder(context)
+                                    .data(photoPath)
+                                    .apply { if (disableHardwareBitmap) allowHardware(false) }
+                                    .build()
+                            }
+                            AsyncImage(
+                                model = imageModel,
+                                contentDescription = "Profile Picture",
+                                contentScale = ContentScale.Crop,
+                                onSuccess = { onAvatarSettled?.invoke() },
+                                onError = { onAvatarSettled?.invoke() },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        } else {
                             Icon(
-                                imageVector = Icons.Outlined.Edit,
-                                contentDescription = "Edit Name",
+                                imageVector = Icons.Outlined.Person,
+                                contentDescription = "Profile Picture",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(13.dp),
+                                modifier = Modifier.size(34.dp),
                             )
                         }
                     }
 
-                    Text(
-                        text = "joined at $joinedDate",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = "ID CARD OF",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 9.sp,
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = editableModifier,
+                        ) {
+                            Text(
+                                text = username,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            if (onEditProfileClick != null) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Edit,
+                                    contentDescription = "Edit Name",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(13.dp),
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "joined at $joinedDate",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+
+                // Bottom hint
+                if (hintText != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = hintText,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            fontSize = 9.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.height(4.dp))
                 }
             }
 
-            // Bottom hint
-            if (hintText != null) {
+            if (latestMiniStamps.isNotEmpty()) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 10.dp, bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy((-12).dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = hintText,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 9.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    latestMiniStamps.forEach { stamp ->
+                        PassportStampBadge(
+                            state = stamp,
+                            size = 46.dp,
+                            compact = true,
+                        )
+                    }
                 }
-            } else {
-                Spacer(Modifier.height(4.dp))
             }
         }
 

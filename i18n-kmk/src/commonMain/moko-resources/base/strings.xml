@@ -253,4 +253,30 @@
     <string name="continue_reading_chapter_page">Ch. %1$s · Page %2$d</string>
     <string name="continue_reading_chapter_name_page">%1$s · Page %2$d</string>
     <string name="action_resume_reading">Resume reading</string>
+    <!-- Mochiku Passport Stamps -->
+    <string name="passport_stamps_title">Passport Stamps</string>
+    <string name="passport_stamps_subtitle">%1$d / %2$d earned</string>
+    <string name="passport_stamps_new_stamp">New stamp: %1$s</string>
+    <string name="passport_stamps_tap_to_dismiss">Tap anywhere to continue</string>
+    <string name="passport_stamps_unlocked_on">Unlocked on %1$s</string>
+    <string name="passport_stamps_progress">Progress: %1$d / %2$d</string>
+    <string name="passport_stamps_locked_label">Locked</string>
+    <string name="recap_share_card_stamps">Stamps</string>
+    <string name="recap_share_stamps_empty">Keep reading to earn your first stamp</string>
+    <string name="stamp_first_page_title">First Page</string>
+    <string name="stamp_first_page_desc">Open your passport by reading your very first chapter.</string>
+    <string name="stamp_bookworm_100_title">Bookworm</string>
+    <string name="stamp_bookworm_100_desc">Read 100 chapters across any series.</string>
+    <string name="stamp_bookworm_1000_title">Grand Archivist</string>
+    <string name="stamp_bookworm_1000_desc">Read 1,000 chapters across your reading journey.</string>
+    <string name="stamp_streak_7_title">Week Streak</string>
+    <string name="stamp_streak_7_desc">Read chapters for 7 consecutive days.</string>
+    <string name="stamp_streak_30_title">Monthly Habit</string>
+    <string name="stamp_streak_30_desc">Maintain a 30-day consecutive reading streak.</string>
+    <string name="stamp_night_owl_title">Night Owl</string>
+    <string name="stamp_night_owl_desc">Read 20 chapters between midnight and 4:59 AM.</string>
+    <string name="stamp_marathon_title">Marathoner</string>
+    <string name="stamp_marathon_desc">Read 30 chapters in a single day.</string>
+    <string name="stamp_finisher_title">Series Finisher</string>
+    <string name="stamp_finisher_desc">Finish every chapter of a completed series with 5 or more chapters.</string>
 </resources>

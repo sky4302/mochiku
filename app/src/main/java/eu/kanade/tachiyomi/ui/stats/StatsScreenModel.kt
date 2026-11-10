@@ -10,11 +10,16 @@ import eu.kanade.presentation.more.stats.data.StatsData
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
+import tachiyomi.domain.history.interactor.GetPassportStamps
 import tachiyomi.domain.history.interactor.GetTotalReadDuration
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -39,6 +44,9 @@ class StatsScreenModel(
     // SY -->
     private val getReadMangaNotInLibraryView: GetReadMangaNotInLibraryView = Injekt.get(),
     // SY <--
+    // KMK -->
+    private val getPassportStamps: GetPassportStamps = Injekt.get(),
+    // KMK <--
 ) : StateScreenModel<StatsScreenState>(StatsScreenState.Loading) {
 
     private val loggedInTrackers by lazy { trackerManager.loggedInTrackers() }
@@ -50,7 +58,7 @@ class StatsScreenModel(
 
     init {
         // SY -->
-        _allRead.onEach { allRead ->
+        val baseStatsFlow = _allRead.transformLatest { allRead ->
             mutableState.update { StatsScreenState.Loading }
             val libraryManga = getLibraryManga.await() + if (allRead) {
                 getReadMangaNotInLibraryView.await()
@@ -92,17 +100,31 @@ class StatsScreenModel(
                 trackerCount = loggedInTrackers.size,
             )
 
-            mutableState.update {
+            emit(
                 StatsScreenState.Success(
                     overview = overviewStatData,
                     titles = titlesStatData,
                     chapters = chaptersStatData,
                     trackers = trackersStatData,
-                )
-            }
+                ),
+            )
             // SY -->
-        }.launchIn(screenModelScope)
+        }
         // SY <--
+
+        // KMK -->
+        combine(
+            baseStatsFlow,
+            getPassportStamps.subscribe()
+                .onStart { emit(emptyList()) },
+        ) { baseSuccess, stamps ->
+            baseSuccess.copy(passportStamps = stamps.toImmutableList())
+        }
+            .onEach { nextState ->
+                mutableState.value = nextState
+            }
+            .launchIn(screenModelScope)
+        // KMK <--
     }
 
     private fun getGlobalUpdateItemCount(libraryManga: List<LibraryManga>): Int {
@@ -159,4 +181,10 @@ class StatsScreenModel(
     fun toggleReadManga() {
         _allRead.value = !_allRead.value
     }
+
+    // KMK -->
+    fun markStampSeen(stampId: String) {
+        getPassportStamps.markStampSeen(stampId)
+    }
+    // KMK <--
 }

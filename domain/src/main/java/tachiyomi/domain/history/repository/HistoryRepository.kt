@@ -20,6 +20,10 @@ interface HistoryRepository {
 
     suspend fun getTotalReadDuration(): Long
 
+    // KMK -->
+    fun getAllHistory(): Flow<List<History>>
+    // KMK <--
+
     suspend fun getHistoryByMangaId(mangaId: Long): List<History>
 
     // KMK -->

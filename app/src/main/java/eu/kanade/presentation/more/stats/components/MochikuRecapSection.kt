@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -54,6 +55,7 @@ import eu.kanade.presentation.more.profile.MochikuProfileStore
 import eu.kanade.presentation.more.profile.MochikuRecapData
 import eu.kanade.presentation.more.profile.MochikuRecapDataEngine
 import eu.kanade.presentation.more.profile.MochikuStoryRecapDialog
+import tachiyomi.domain.history.model.StampState
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -70,6 +72,11 @@ fun MochikuRecapSection(
     readDuration: String,
     totalChaptersRead: Int,
     libraryCount: Int,
+    // KMK -->
+    passportStamps: List<StampState> = emptyList(),
+    externalSharePage: Int? = null,
+    onExternalShareHandled: () -> Unit = {},
+    // KMK <--
 ) {
     val context = LocalContext.current
     var username by remember { mutableStateOf(MochikuProfileStore.getUsername(context)) }
@@ -83,6 +90,12 @@ fun MochikuRecapSection(
     var showStoryDialog by remember { mutableStateOf(false) }
     // KMK -->
     var shareInitialPage by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(externalSharePage) {
+        if (externalSharePage != null) {
+            shareInitialPage = externalSharePage
+            onExternalShareHandled()
+        }
+    }
     // KMK <--
 
     // Load real reading history for current month
@@ -103,6 +116,7 @@ fun MochikuRecapSection(
         effectiveChapters,
         effectiveDuration,
         effectiveLibrary,
+        passportStamps,
     ) {
         val now = LocalDate.now()
         val monthName = recapData?.monthName ?: now.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
@@ -124,6 +138,7 @@ fun MochikuRecapSection(
                     chaptersRead = it.chaptersRead,
                 )
             }.orEmpty(),
+            unlockedStamps = passportStamps.filter { it.isUnlocked },
         )
     }
     // KMK <--
@@ -202,6 +217,9 @@ fun MochikuRecapSection(
             joinedDate = joinedDate,
             onEditProfileClick = { showEditProfileDialog = true },
             onLaunchRecap = { showStoryDialog = true },
+            // KMK -->
+            recentStamps = passportStamps,
+            // KMK <--
         )
 
         // Barcode Unlock Card

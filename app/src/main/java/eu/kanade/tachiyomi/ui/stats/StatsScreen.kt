@@ -10,6 +10,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.more.stats.StatsScreenContent
 import eu.kanade.presentation.more.stats.StatsScreenState
+import eu.kanade.presentation.more.stats.components.PassportStampSlamOverlay
 import eu.kanade.presentation.util.Screen
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
@@ -58,10 +59,23 @@ class StatsScreen : Screen() {
                 return@Scaffold
             }
 
+            val successState = state as? StatsScreenState.Success ?: return@Scaffold
             StatsScreenContent(
-                state = state as? StatsScreenState.Success ?: return@Scaffold,
+                state = successState,
                 paddingValues = paddingValues,
             )
+
+            // KMK -->
+            val unseenUnlockedStamp = successState.passportStamps.firstOrNull {
+                it.isUnlocked && !it.isSeen
+            }
+            if (unseenUnlockedStamp != null) {
+                PassportStampSlamOverlay(
+                    state = unseenUnlockedStamp,
+                    onDismiss = { screenModel.markStampSeen(unseenUnlockedStamp.stamp.id) },
+                )
+            }
+            // KMK <--
         }
     }
 }

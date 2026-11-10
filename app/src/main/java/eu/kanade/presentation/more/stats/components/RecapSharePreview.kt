@@ -76,7 +76,8 @@ import java.util.concurrent.TimeUnit
 private const val PAGE_RECEIPT = 0
 private const val PAGE_READER_ID = 1
 private const val PAGE_BARCODE = 2
-private const val PAGE_COUNT = 3
+internal const val PAGE_STAMPS = 3
+private const val PAGE_COUNT = 4
 
 @Composable
 fun RecapSharePreviewDialog(
@@ -100,8 +101,9 @@ fun RecapSharePreviewDialog(
     val receiptLayer = rememberGraphicsLayer()
     val readerIdLayer = rememberGraphicsLayer()
     val barcodeLayer = rememberGraphicsLayer()
-    val layers = remember(receiptLayer, readerIdLayer, barcodeLayer) {
-        listOf(receiptLayer, readerIdLayer, barcodeLayer)
+    val stampsLayer = rememberGraphicsLayer()
+    val layers = remember(receiptLayer, readerIdLayer, barcodeLayer, stampsLayer) {
+        listOf(receiptLayer, readerIdLayer, barcodeLayer, stampsLayer)
     }
 
     val isCurrentPageReady = when (pagerState.currentPage) {
@@ -112,7 +114,8 @@ fun RecapSharePreviewDialog(
     val currentPageLabel = when (pagerState.currentPage) {
         PAGE_RECEIPT -> stringResource(KMR.strings.recap_share_card_receipt)
         PAGE_READER_ID -> stringResource(KMR.strings.recap_share_card_id)
-        else -> stringResource(KMR.strings.recap_share_card_barcode)
+        PAGE_BARCODE -> stringResource(KMR.strings.recap_share_card_barcode)
+        else -> stringResource(KMR.strings.recap_share_card_stamps)
     }
 
     Dialog(
@@ -178,7 +181,7 @@ fun RecapSharePreviewDialog(
                 // 9:16 Story Card Pager
                 HorizontalPager(
                     state = pagerState,
-                    beyondViewportPageCount = 2,
+                    beyondViewportPageCount = 3,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
@@ -220,7 +223,11 @@ fun RecapSharePreviewDialog(
                                         hideDetails = hideDetails,
                                         onImageReadyChanged = { isReaderIdImageReady = it },
                                     )
-                                    else -> BarcodeShareCard(
+                                    PAGE_BARCODE -> BarcodeShareCard(
+                                        data = data,
+                                        hideDetails = hideDetails,
+                                    )
+                                    else -> StampsShareCard(
                                         data = data,
                                         hideDetails = hideDetails,
                                     )
