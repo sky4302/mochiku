@@ -61,7 +61,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -321,11 +323,9 @@ object HomeScreen : Screen() {
     ) {
         val haptic = LocalHapticFeedback.current
         val colorScheme = MaterialTheme.colorScheme
-        val containerColor = colorScheme.surfaceContainer
-        val borderColor = colorScheme.outlineVariant.copy(alpha = 0.45f)
-        val highlightColor = colorScheme.secondaryContainer
-        val activeContentColor = colorScheme.onSecondaryContainer
-        val inactiveContentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+        val containerColor = colorScheme.surfaceContainer.copy(alpha = 0.78f)
+        val activeContentColor = Color.White
+        val inactiveContentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
 
         var rowWidthPx by remember { mutableFloatStateOf(0f) }
         var dragSlotFloat by remember { mutableStateOf<Float?>(null) }
@@ -343,16 +343,24 @@ object HomeScreen : Screen() {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp)
+                    .height(58.dp)
                     .shadow(
-                        elevation = 8.dp,
+                        elevation = 10.dp,
                         shape = RoundedCornerShape(50),
-                        spotColor = colorScheme.scrim.copy(alpha = 0.25f),
-                        ambientColor = colorScheme.scrim.copy(alpha = 0.15f),
+                        spotColor = colorScheme.scrim.copy(alpha = 0.35f),
+                        ambientColor = colorScheme.scrim.copy(alpha = 0.20f),
                     ),
                 shape = RoundedCornerShape(50),
                 color = containerColor,
-                border = BorderStroke(1.dp, borderColor),
+                border = BorderStroke(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.22f),
+                            colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        ),
+                    ),
+                ),
                 tonalElevation = 0.dp,
             ) {
                 Row(
@@ -394,7 +402,6 @@ object HomeScreen : Screen() {
                         .capsuleNavHighlight(
                             selectedIndex = selectedIndex,
                             tabCount = tabs.size,
-                            highlightColor = highlightColor,
                             dragIndex = dragSlotFloat,
                         ),
                     verticalAlignment = Alignment.CenterVertically,
@@ -404,9 +411,9 @@ object HomeScreen : Screen() {
                         val interactionSource = remember { MutableInteractionSource() }
                         val iconScale by animateFloatAsState(
                             targetValue = if (isSelected && dragSlotFloat != null) {
-                                1.14f
+                                1.18f
                             } else if (isSelected) {
-                                1.04f
+                                1.08f
                             } else {
                                 1f
                             },
@@ -597,21 +604,20 @@ object HomeScreen : Screen() {
 
 private val NavHighlightLead = spring<Float>(dampingRatio = 0.82f, stiffness = 700f)
 private val NavHighlightTrail = spring<Float>(dampingRatio = 0.82f, stiffness = 320f)
-private val NavHighlightInset = 8.dp
+private val NavHighlightInset = 6.dp
 private val NavHighlightGap = 4.dp
 
 @Composable
 internal fun Modifier.capsuleNavHighlight(
     selectedIndex: Int,
     tabCount: Int,
-    highlightColor: Color = MaterialTheme.colorScheme.secondaryContainer,
     dragIndex: Float? = null,
 ): Modifier {
     val start = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
     val end = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
     val shown = remember { Animatable(if (selectedIndex >= 0) 1f else 0f) }
     val dragInsetBoost by animateFloatAsState(
-        targetValue = if (dragIndex != null) 2f else 0f,
+        targetValue = if (dragIndex != null) 3.5f else 0f,
         animationSpec = spring(dampingRatio = 0.7f, stiffness = 500f),
         label = "dragInsetBoost",
     )
@@ -643,16 +649,40 @@ internal fun Modifier.capsuleNavHighlight(
         if (alpha <= 0f || tabCount == 0) return@drawBehind
         val slot = size.width / tabCount
         val halfGap = NavHighlightGap.toPx() / 2f
-        val inset = (NavHighlightInset - dragInsetBoost.dp).coerceAtLeast(4.dp).toPx()
+        val inset = (NavHighlightInset - dragInsetBoost.dp).coerceAtLeast(2.dp).toPx()
         val left = start.value * slot + halfGap
         val right = (end.value + 1f) * slot - halfGap
         val height = size.height - inset * 2f
+        val radius = CornerRadius(height / 2f)
+        val rectTopLeft = Offset(left, inset)
+        val rectSize = Size(right - left, height)
+
+        val isDragging = dragIndex != null
+        val fillColor = if (isDragging) {
+            Color.White.copy(alpha = 0.18f * alpha)
+        } else {
+            Color.White.copy(alpha = 0.13f * alpha)
+        }
         drawRoundRect(
-            color = highlightColor,
-            topLeft = Offset(left, inset),
-            size = Size(right - left, height),
-            cornerRadius = CornerRadius(height / 2f),
-            alpha = alpha,
+            color = fillColor,
+            topLeft = rectTopLeft,
+            size = rectSize,
+            cornerRadius = radius,
+        )
+
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = (if (isDragging) 0.45f else 0.32f) * alpha),
+                    Color.White.copy(alpha = 0.10f * alpha),
+                ),
+                startY = inset,
+                endY = inset + height,
+            ),
+            topLeft = rectTopLeft,
+            size = rectSize,
+            cornerRadius = radius,
+            style = Stroke(width = 1.dp.toPx()),
         )
     }
 }

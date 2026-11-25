@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -154,16 +156,24 @@ private fun ContinueReadingCapsuleSurface(
         onClick = onBarClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(50.dp)
             .shadow(
-                elevation = 6.dp,
+                elevation = 8.dp,
                 shape = RoundedCornerShape(50),
-                spotColor = colorScheme.scrim.copy(alpha = 0.22f),
-                ambientColor = colorScheme.scrim.copy(alpha = 0.14f),
+                spotColor = colorScheme.scrim.copy(alpha = 0.30f),
+                ambientColor = colorScheme.scrim.copy(alpha = 0.18f),
             ),
         shape = RoundedCornerShape(50),
-        color = colorScheme.surfaceContainer,
-        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.45f)),
+        color = colorScheme.surfaceContainer.copy(alpha = 0.78f),
+        border = BorderStroke(
+            width = 1.dp,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.22f),
+                    colorScheme.outlineVariant.copy(alpha = 0.35f),
+                ),
+            ),
+        ),
         tonalElevation = 0.dp,
     ) {
         Row(
@@ -175,7 +185,7 @@ private fun ContinueReadingCapsuleSurface(
             MangaCover.Square(
                 data = item.coverData,
                 shape = CircleShape,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(34.dp),
                 size = MangaCover.Size.Normal,
             )
 
@@ -203,16 +213,17 @@ private fun ContinueReadingCapsuleSurface(
 
             Surface(
                 onClick = onResumeClick,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(34.dp),
                 shape = CircleShape,
-                color = colorScheme.primary,
-                contentColor = colorScheme.onPrimary,
+                color = colorScheme.onSurface.copy(alpha = 0.14f),
+                contentColor = Color.White,
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,
                         contentDescription = stringResource(KMR.strings.action_resume_reading),
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }

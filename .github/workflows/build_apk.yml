@@ -84,15 +84,16 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.22
-          name: Mochiku v1.14.22
+          tag_name: v1.14.23
+          name: Mochiku v1.14.23
           body: |
-            ### Mochiku (餅ク) v1.14.22 - Continue-Reading Bar Re-Read Support
+            ### Mochiku (餅ク) v1.14.23 - Frosted Matte Glass Dual-Capsule Dock
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.22:**
-            - **Re-Read Support Without Resetting Read Checkmarks**: Re-opening any already-read chapter inside a completed series now activates session tracking in `HistoryPreferences`, showing that chapter + saved page (`lastPageRead + 1`) on the floating Continue-Reading Bar.
-            - **Exact Page Resume & Smart Chapter Advance**: Tapping Play passes the exact 0-indexed `page` extra to `ReaderActivity` so `ChapterLoader` resumes the exact page you stopped on; reaching the final page cleanly advances to `Ch. N+1 · Page 1` (or hides the bar automatically once you finish the final chapter).
+            **What's New in v1.14.23:**
+            - **Frosted Matte Glass Capsule Dock**: Upgraded the floating bottom navigation bar and Continue-Reading capsule to translucent frosted dark acrylic (`0.78f` alpha) with subtle top-lit specular gradient borders.
+            - **Tactile Drag Pop-Out Lens**: The active tab highlight is now a pure frosted matte glass lens (diffused translucent pill with hairline specular rim) that dynamically expands vertically under your thumb during horizontal scrubbing without any rainbow/chromatic glare.
+            - **Soft Tonal Action Button & Slim Proportions**: Refined nav pill height to 58dp, Continue-Reading bar to 50dp, and replaced the stark solid white button with a frosted tonal play circle.
             
             ---
             ### Download Links (Choose for your phone):

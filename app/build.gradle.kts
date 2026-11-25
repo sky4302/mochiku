@@ -28,8 +28,8 @@ android {
     defaultConfig {
         applicationId = "app.mochiku"
 
-        versionCode = 103
-        versionName = "1.14.22"
+        versionCode = 104
+        versionName = "1.14.23"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
