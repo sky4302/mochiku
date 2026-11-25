@@ -172,6 +172,7 @@ private fun ScaffoldLayout(
     contentWindowInsets: WindowInsets,
     bottomBar: @Composable () -> Unit,
 ) {
+    val additionalBottomDp = LocalBottomBarPadding.current
     SubcomposeLayout { constraints ->
         val layoutWidth = constraints.maxWidth
         val layoutHeight = constraints.maxHeight
@@ -273,7 +274,6 @@ private fun ScaffoldLayout(
                 .fastMaxBy { it.height }
                 ?.height
                 ?.takeIf { it != 0 }
-            val additionalBottomDp = LocalBottomBarPadding.current
             val additionalBottomPx = additionalBottomDp.roundToPx()
             val effectiveBottomBarHeight = max(bottomBarHeight ?: 0, additionalBottomPx)
             val fabOffsetFromBottom = fabPlacement?.let {
