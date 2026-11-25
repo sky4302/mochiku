@@ -84,16 +84,16 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.14.23
-          name: Mochiku v1.14.23
+          tag_name: v1.14.24
+          name: Mochiku v1.14.24
           body: |
-            ### Mochiku (餅ク) v1.14.23 - Frosted Matte Glass Dual-Capsule Dock
+            ### Mochiku (餅ク) v1.14.24 - Full-Bleed Backdrop Scrolling with Frosted Haze Blur
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.23:**
-            - **Frosted Matte Glass Capsule Dock**: Upgraded the floating bottom navigation bar and Continue-Reading capsule to translucent frosted dark acrylic (`0.78f` alpha) with subtle top-lit specular gradient borders.
-            - **Tactile Drag Pop-Out Lens**: The active tab highlight is now a pure frosted matte glass lens (diffused translucent pill with hairline specular rim) that dynamically expands vertically under your thumb during horizontal scrubbing without any rainbow/chromatic glare.
-            - **Soft Tonal Action Button & Slim Proportions**: Refined nav pill height to 58dp, Continue-Reading bar to 50dp, and replaced the stark solid white button with a frosted tonal play circle.
+            **What's New in v1.14.24:**
+            - **Full-Bleed Manga Backdrop Scrolling**: Colorful manga covers now render and scroll edge-to-edge behind, between, and around both floating capsules down to the bottom of the screen, eliminating the solid black box behind the dock.
+            - **Haze Backdrop Blur**: Applied real backdrop blur (`Haze`) with a diffused 24dp blur radius through the frosted translucent acrylic of both capsules, making manga cover artwork glow subtly as you scroll.
+            - **Edge-to-Edge List Clearance**: Provided floating dock clearance via `LocalBottomBarPadding` so the bottom row of manga cards is fully scrollable above the capsules without obstruction.
             
             ---
             ### Download Links (Choose for your phone):

@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -42,6 +43,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeDefaults
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
 import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.formatChapterNumber
@@ -64,6 +69,7 @@ fun ContinueReadingBar(
     onResumeClick: (ContinueReadingItem) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    hazeState: HazeState? = null,
 ) {
     var lastItem by remember { mutableStateOf<ContinueReadingItem?>(null) }
     if (state is ContinueReadingBarState.Visible) {
@@ -85,6 +91,7 @@ fun ContinueReadingBar(
                 onBarClick = { onBarClick(item) },
                 onResumeClick = { onResumeClick(item) },
                 onDismiss = onDismiss,
+                hazeState = hazeState,
             )
         }
     }
@@ -96,6 +103,7 @@ private fun ContinueReadingCapsule(
     onBarClick: () -> Unit,
     onResumeClick: () -> Unit,
     onDismiss: () -> Unit,
+    hazeState: HazeState? = null,
 ) {
     val haptic = LocalHapticFeedback.current
     val dismissState = rememberSwipeToDismissBoxState(
@@ -125,6 +133,7 @@ private fun ContinueReadingCapsule(
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onResumeClick()
             },
+            hazeState = hazeState,
         )
     }
 }
@@ -135,8 +144,10 @@ private fun ContinueReadingCapsuleSurface(
     onBarClick: () -> Unit,
     onResumeClick: () -> Unit,
     modifier: Modifier = Modifier,
+    hazeState: HazeState? = null,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val containerColor = colorScheme.surfaceContainer.copy(alpha = 0.70f)
     val pageNumber = (item.chapter.lastPageRead + 1).coerceAtLeast(1L)
     val subtitle = if (item.chapter.isRecognizedNumber) {
         stringResource(
@@ -162,9 +173,24 @@ private fun ContinueReadingCapsuleSurface(
                 shape = RoundedCornerShape(50),
                 spotColor = colorScheme.scrim.copy(alpha = 0.30f),
                 ambientColor = colorScheme.scrim.copy(alpha = 0.18f),
+            )
+            .clip(RoundedCornerShape(50))
+            .then(
+                if (hazeState != null) {
+                    Modifier.hazeEffect(
+                        state = hazeState,
+                        style = HazeStyle(
+                            backgroundColor = Color.Transparent,
+                            tint = HazeDefaults.tint(containerColor),
+                            blurRadius = 24.dp,
+                        ),
+                    )
+                } else {
+                    Modifier
+                },
             ),
         shape = RoundedCornerShape(50),
-        color = colorScheme.surfaceContainer.copy(alpha = 0.78f),
+        color = if (hazeState != null) Color.Transparent else containerColor,
         border = BorderStroke(
             width = 1.dp,
             brush = Brush.verticalGradient(

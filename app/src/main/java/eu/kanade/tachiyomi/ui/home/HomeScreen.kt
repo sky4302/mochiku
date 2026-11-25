@@ -22,7 +22,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -70,6 +71,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +84,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import dev.chrisbanes.haze.HazeDefaults
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
@@ -107,6 +114,7 @@ import soup.compose.material.motion.animation.materialFadeThroughOut
 import tachiyomi.domain.history.model.ContinueReadingItem
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.material.LocalBottomBarPadding
 import tachiyomi.presentation.core.components.material.NavigationBar
 import tachiyomi.presentation.core.components.material.NavigationRail
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -157,6 +165,7 @@ object HomeScreen : Screen() {
             tab = LibraryTab,
             key = TabNavigatorKey,
         ) { tabNavigator ->
+            val hazeState = remember { HazeState() }
             // Provide usable navigator to content screen
             CompositionLocalProvider(LocalNavigator provides navigator) {
                 Scaffold(
@@ -213,6 +222,7 @@ object HomeScreen : Screen() {
                                         modifier = Modifier.windowInsetsPadding(
                                             WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal),
                                         ),
+                                        hazeState = hazeState,
                                     )
                                     // KMK <--
                                     MochikuCapsuleBottomBar(
@@ -225,6 +235,7 @@ object HomeScreen : Screen() {
                                                 scope.launch { tab.onReselect(navigator) }
                                             }
                                         },
+                                        hazeState = hazeState,
                                     )
                                 }
                             }
@@ -243,28 +254,37 @@ object HomeScreen : Screen() {
                                         ),
                                     )
                                     .padding(bottom = 8.dp),
+                                hazeState = hazeState,
                             )
                             // KMK <--
                         }
                     },
                     contentWindowInsets = WindowInsets(0),
                 ) { contentPadding ->
-                    Box(
-                        modifier = Modifier
-                            .padding(contentPadding)
-                            .consumeWindowInsets(contentPadding),
-                    ) {
-                        AnimatedContent(
-                            targetState = tabNavigator.current,
-                            transitionSpec = {
-                                materialFadeThroughIn(initialScale = 1f, durationMillis = TabFadeDuration) togetherWith
-                                    materialFadeThroughOut(durationMillis = TabFadeDuration)
-                            },
-                            label = "tabContent",
-                            contentKey = { it.key },
+                    val bottomDockPadding = contentPadding.calculateBottomPadding()
+                    CompositionLocalProvider(LocalBottomBarPadding provides bottomDockPadding) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(
+                                    top = contentPadding.calculateTopPadding(),
+                                    start = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
+                                    end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
+                                )
+                                .hazeSource(state = hazeState),
                         ) {
-                            tabNavigator.saveableState(key = "currentTab", it) {
-                                it.Content()
+                            AnimatedContent(
+                                targetState = tabNavigator.current,
+                                transitionSpec = {
+                                    materialFadeThroughIn(initialScale = 1f, durationMillis = TabFadeDuration) togetherWith
+                                        materialFadeThroughOut(durationMillis = TabFadeDuration)
+                                },
+                                label = "tabContent",
+                                contentKey = { it.key },
+                            ) {
+                                tabNavigator.saveableState(key = "currentTab", it) {
+                                    it.Content()
+                                }
                             }
                         }
                     }
@@ -320,10 +340,11 @@ object HomeScreen : Screen() {
         tabs: List<eu.kanade.presentation.util.Tab>,
         selectedIndex: Int,
         onTabSelected: (eu.kanade.presentation.util.Tab) -> Unit,
+        hazeState: HazeState? = null,
     ) {
         val haptic = LocalHapticFeedback.current
         val colorScheme = MaterialTheme.colorScheme
-        val containerColor = colorScheme.surfaceContainer.copy(alpha = 0.78f)
+        val containerColor = colorScheme.surfaceContainer.copy(alpha = 0.70f)
         val activeContentColor = Color.White
         val inactiveContentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
 
@@ -349,9 +370,24 @@ object HomeScreen : Screen() {
                         shape = RoundedCornerShape(50),
                         spotColor = colorScheme.scrim.copy(alpha = 0.35f),
                         ambientColor = colorScheme.scrim.copy(alpha = 0.20f),
+                    )
+                    .clip(RoundedCornerShape(50))
+                    .then(
+                        if (hazeState != null) {
+                            Modifier.hazeEffect(
+                                state = hazeState,
+                                style = HazeStyle(
+                                    backgroundColor = Color.Transparent,
+                                    tint = HazeDefaults.tint(containerColor),
+                                    blurRadius = 24.dp,
+                                ),
+                            )
+                        } else {
+                            Modifier
+                        },
                     ),
                 shape = RoundedCornerShape(50),
-                color = containerColor,
+                color = if (hazeState != null) Color.Transparent else containerColor,
                 border = BorderStroke(
                     width = 1.dp,
                     brush = Brush.verticalGradient(

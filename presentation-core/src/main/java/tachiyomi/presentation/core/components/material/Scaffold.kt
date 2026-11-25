@@ -39,6 +39,7 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,6 +55,8 @@ import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
 import androidx.compose.ui.util.fastMaxBy
 import kotlin.math.max
+
+val LocalBottomBarPadding = compositionLocalOf { 0.dp }
 
 /**
  * <a href="https://material.io/design/layout/understanding-layout.html" class="external" target="_blank">Material Design layout</a>.
@@ -270,12 +273,15 @@ private fun ScaffoldLayout(
                 .fastMaxBy { it.height }
                 ?.height
                 ?.takeIf { it != 0 }
+            val additionalBottomDp = LocalBottomBarPadding.current
+            val additionalBottomPx = additionalBottomDp.roundToPx()
+            val effectiveBottomBarHeight = max(bottomBarHeight ?: 0, additionalBottomPx)
             val fabOffsetFromBottom = fabPlacement?.let {
-                max(bottomBarHeight ?: 0, bottomInset) + it.height + FabSpacing.roundToPx()
+                max(effectiveBottomBarHeight, bottomInset) + it.height + FabSpacing.roundToPx()
             }
 
             val snackbarOffsetFromBottom = if (snackbarHeight != 0) {
-                snackbarHeight + (fabOffsetFromBottom ?: max(bottomBarHeight ?: 0, bottomInset))
+                snackbarHeight + (fabOffsetFromBottom ?: max(effectiveBottomBarHeight, bottomInset))
             } else {
                 0
             }
@@ -292,7 +298,7 @@ private fun ScaffoldLayout(
                     },
                     // Tachiyomi: Also take account of fab height when providing inner padding
                     bottom = if (bottomBarPlaceables.isEmpty() || bottomBarHeightPx == 0) {
-                        max(insets.calculateBottomPadding(), fabOffsetDp)
+                        max(max(insets.calculateBottomPadding(), additionalBottomDp), fabOffsetDp)
                     } else {
                         max(bottomBarHeightPx.toDp(), fabOffsetDp)
                     },
