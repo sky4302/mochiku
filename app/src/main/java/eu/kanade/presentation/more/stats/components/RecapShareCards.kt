@@ -55,6 +55,12 @@ data class RecapShareMangaRow(
     val chaptersRead: Int,
 )
 
+data class RecapShareAuthorRow(
+    val author: String,
+    val durationFormatted: String,
+    val chaptersRead: Int,
+)
+
 data class RecapShareData(
     val monthLabel: String,
     val yearMonthCode: String,
@@ -66,6 +72,7 @@ data class RecapShareData(
     val durationFormatted: String,
     val libraryCount: Int,
     val topMangaList: List<RecapShareMangaRow>,
+    val topAuthorList: List<RecapShareAuthorRow> = emptyList(),
     val unlockedStamps: List<StampState> = emptyList(),
 )
 
@@ -77,6 +84,9 @@ private fun RecapShareData.sanitized(hideDetails: Boolean): RecapShareData {
         cardNumber = "••••••••••",
         topMangaList = topMangaList.mapIndexed { index, row ->
             row.copy(title = "Series ${index + 1}")
+        },
+        topAuthorList = topAuthorList.mapIndexed { index, row ->
+            row.copy(author = "Author ${index + 1}")
         },
     )
 }
@@ -96,6 +106,7 @@ fun ReceiptShareCard(
             username = effective.username,
             cardNumberSuffix = if (hideDetails) "••••" else effective.cardNumber.takeLast(4),
             topMangaList = effective.topMangaList,
+            topAuthorList = effective.topAuthorList,
             chaptersRead = effective.chaptersRead,
             durationFormatted = effective.durationFormatted,
             modifier = Modifier.fillMaxWidth(0.92f),
@@ -416,6 +427,7 @@ internal fun MochikuThermalReceiptPaper(
     chaptersRead: Int,
     durationFormatted: String,
     modifier: Modifier = Modifier,
+    topAuthorList: List<RecapShareAuthorRow> = emptyList(),
     footerContent: @Composable ColumnScope.() -> Unit = {},
 ) {
     Box(
@@ -474,31 +486,38 @@ internal fun MochikuThermalReceiptPaper(
                 color = Color(0xFF888888),
             )
 
+            if (topAuthorList.isNotEmpty()) {
+                Text(
+                    text = "TOP AUTHORS",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF444444),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                topAuthorList.take(4).forEach { item ->
+                    ReceiptItemRow(
+                        label = "${item.chaptersRead}x ${item.author}",
+                        trailing = "- ${item.durationFormatted}",
+                    )
+                }
+                Text(
+                    text = "TOP MANGA",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF444444),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             if (topMangaList.isNotEmpty()) {
-                topMangaList.take(8).forEachIndexed { i, item ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "${i + 1}x ${item.title}",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.5.sp,
-                            color = Color(0xFF222222),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "- ${item.durationFormatted}",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF444444),
-                        )
-                    }
+                val maxMangaRows = if (topAuthorList.isNotEmpty()) 5 else 8
+                topMangaList.take(maxMangaRows).forEach { item ->
+                    ReceiptItemRow(
+                        label = "${item.chaptersRead}x ${item.title}",
+                        trailing = "- ${item.durationFormatted}",
+                    )
                 }
             } else {
                 Text(
@@ -543,6 +562,36 @@ internal fun MochikuThermalReceiptPaper(
 
             footerContent()
         }
+    }
+}
+
+@Composable
+private fun ReceiptItemRow(
+    label: String,
+    trailing: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 10.5.sp,
+            color = Color(0xFF222222),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = trailing,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF444444),
+        )
     }
 }
 

@@ -1,15 +1,20 @@
 package eu.kanade.presentation.more.profile
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,21 +26,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoStories
-import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.CollectionsBookmark
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -54,17 +54,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -76,6 +79,8 @@ import kotlinx.coroutines.delay
 import tachiyomi.domain.history.model.StampState
 import java.time.LocalDate
 import java.util.Locale
+
+private const val TOTAL_RECAP_SLIDES = 8
 
 @Composable
 fun MochikuStoryRecapDialog(
@@ -89,54 +94,91 @@ fun MochikuStoryRecapDialog(
     onDismissRequest: () -> Unit,
     recentStamps: List<StampState> = emptyList(),
 ) {
-    // Query actual monthly reading data from Komikku's history database
+    // Query monthly reading history from Komikku's SQLite database
     val recapData by produceState<MochikuRecapData?>(initialValue = null) {
         value = MochikuRecapDataEngine.loadCurrentMonthRecap()
     }
 
     var currentSlide by remember { mutableIntStateOf(0) }
-    var previousSlide by remember { mutableIntStateOf(0) }
-    val totalSlides = 8
+    val haptic = LocalHapticFeedback.current
+
+    fun advanceSlide() {
+        if (currentSlide < TOTAL_RECAP_SLIDES - 1) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            currentSlide++
+        } else {
+            onDismissRequest()
+        }
+    }
+
+    fun rewindSlide() {
+        if (currentSlide > 0) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            currentSlide--
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        val backgroundColor = MaterialTheme.colorScheme.background
-        val dotColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-        val onBackgroundColor = MaterialTheme.colorScheme.onBackground
+        val colorScheme = MaterialTheme.colorScheme
+        val backgroundColor = colorScheme.background
+        val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
+        val onBackgroundColor = colorScheme.onBackground
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(backgroundColor)
-                .drawBehind {
-                    // Mochy-style dot matrix grid
-                    val spacing = 28.dp.toPx()
-                    val radius = 1.2.dp.toPx()
-                    var x = 0f
-                    while (x < size.width) {
-                        var y = 0f
-                        while (y < size.height) {
-                            drawCircle(dotColor, radius = radius, center = Offset(x, y))
-                            y += spacing
-                        }
-                        x += spacing
-                    }
-                },
+                .clipToBounds(),
         ) {
             val data = recapData
+
+            // Low-opacity scrolling watermark marquee behind the cached dot matrix
+            if (data != null) {
+                val watermarkLabel = when (currentSlide) {
+                    1 -> data.monthName.uppercase(Locale.ENGLISH)
+                    2 -> (data.favoriteWeekday ?: data.monthName).uppercase(Locale.ENGLISH)
+                    else -> "MOCHIKU"
+                }
+                RecapWatermarkMarquee(
+                    text = watermarkLabel,
+                    color = onBackgroundColor.copy(alpha = 0.045f),
+                )
+            }
+
+            // Cached Mochy-style dot-matrix texture
+            Spacer(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithCache {
+                        val spacing = 28.dp.toPx()
+                        val radius = 1.2.dp.toPx()
+                        onDrawBehind {
+                            var x = 0f
+                            while (x < size.width) {
+                                var y = 0f
+                                while (y < size.height) {
+                                    drawCircle(dotColor, radius = radius, center = Offset(x, y))
+                                    y += spacing
+                                }
+                                x += spacing
+                            }
+                        }
+                    },
+            )
+
             if (data == null) {
-                // Sleek loading spinner while reading SQLite history
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+                        CircularProgressIndicator(color = colorScheme.primary, modifier = Modifier.size(36.dp))
                         Text(
                             text = "Analyzing reading history...",
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            color = onBackgroundColor.copy(alpha = 0.7f),
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp,
                         )
@@ -152,12 +194,7 @@ fun MochikuStoryRecapDialog(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                            ) {
-                                if (currentSlide > 0) {
-                                    previousSlide = currentSlide
-                                    currentSlide--
-                                }
-                            },
+                            ) { rewindSlide() },
                     )
                     Box(
                         modifier = Modifier
@@ -166,18 +203,11 @@ fun MochikuStoryRecapDialog(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                            ) {
-                                if (currentSlide < totalSlides - 1) {
-                                    previousSlide = currentSlide
-                                    currentSlide++
-                                } else {
-                                    onDismissRequest()
-                                }
-                            },
+                            ) { advanceSlide() },
                     )
                 }
 
-                // Top Segmented Progress Bar & Title
+                // Top Chrome: Hairline Monochrome Progress + Docked Avatar + Title
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -187,24 +217,24 @@ fun MochikuStoryRecapDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        for (i in 0 until totalSlides) {
+                        for (i in 0 until TOTAL_RECAP_SLIDES) {
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(3.dp)
-                                    .clip(RoundedCornerShape(2.dp))
+                                    .height(2.dp)
+                                    .clip(RoundedCornerShape(1.dp))
                                     .background(
-                                        when {
-                                            i < currentSlide -> MaterialTheme.colorScheme.primary
-                                            i == currentSlide -> MaterialTheme.colorScheme.primary
-                                            else -> MaterialTheme.colorScheme.surfaceContainerHighest
+                                        if (i <= currentSlide) {
+                                            onBackgroundColor.copy(alpha = 0.85f)
+                                        } else {
+                                            colorScheme.outlineVariant.copy(alpha = 0.32f)
                                         },
                                     ),
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -214,17 +244,28 @@ fun MochikuStoryRecapDialog(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f),
                         ) {
+                            AnimatedVisibility(
+                                visible = currentSlide > 0,
+                                enter = fadeIn(tween(260)) + scaleIn(initialScale = 0.75f, animationSpec = tween(260)),
+                                exit = fadeOut(tween(180)),
+                            ) {
+                                StoryAvatar(photoPath = photoPath, size = 30)
+                            }
+
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                color = colorScheme.surfaceContainer,
                                 modifier = Modifier.size(24.dp),
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Image(
                                         painter = painterResource(R.drawable.komikku),
                                         contentDescription = null,
-                                        modifier = Modifier.size(16.dp).clip(CircleShape),
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(CircleShape),
                                     )
                                 }
                             }
@@ -233,7 +274,9 @@ fun MochikuStoryRecapDialog(
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
+                                color = onBackgroundColor.copy(alpha = 0.85f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
 
@@ -250,35 +293,49 @@ fun MochikuStoryRecapDialog(
                     }
                 }
 
-                // Slide Content with PPTX Deck Transitions
+                // Scene Content with Video-Reel Crossfade & Scale Cuts
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 70.dp),
+                        .padding(horizontal = 24.dp, vertical = 72.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     AnimatedContent(
                         targetState = currentSlide,
                         transitionSpec = {
-                            if (targetState > initialState) {
-                                (slideInHorizontally(tween(350, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300)))
-                                    .togetherWith(slideOutHorizontally(tween(350, easing = FastOutSlowInEasing)) { -it / 2 } + fadeOut(tween(250)))
-                            } else {
-                                (slideInHorizontally(tween(350, easing = FastOutSlowInEasing)) { -it } + fadeIn(tween(300)))
-                                    .togetherWith(slideOutHorizontally(tween(350, easing = FastOutSlowInEasing)) { it / 2 } + fadeOut(tween(250)))
-                            }
+                            (
+                                fadeIn(tween(320, easing = FastOutSlowInEasing)) +
+                                    scaleIn(
+                                        initialScale = 0.96f,
+                                        animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                    )
+                                )
+                                .togetherWith(fadeOut(tween(220, easing = FastOutSlowInEasing)))
                         },
-                        label = "pptxSlideTransition",
+                        label = "recapSceneTransition",
                     ) { targetSlide ->
                         when (targetSlide) {
-                            0 -> SlideJourney(username, photoPath, joinedDate, data.allTimeDurationFormatted)
+                            0 -> SlideJourney(username, photoPath, joinedDate, data.allTimeDurationMs)
                             1 -> SlideMonthProgress(data.monthName, data.monthChaptersRead)
-                            2 -> SlideAuthorMangaCarousel(photoPath, data)
-                            3 -> SlideFavoriteMangaHighlight(data)
-                            4 -> SlideCoverArtwork(data)
+                            2 -> SlideFavoriteWeekday(data)
+                            3 -> RecapRouletteSlide(data)
+                            4 -> RecapCoverGridSlide(data)
                             5 -> SlideMilestoneChapters(data)
-                            6 -> SlideThermalReceipt(username, cardNumber, data)
-                            7 -> SlideConclusion(username, cardNumber, joinedDate, data.monthName, photoPath, recentStamps, onDismissRequest)
+                            6 -> RecapThermalReceiptSlide(
+                                username = username,
+                                cardNumber = cardNumber,
+                                data = data,
+                                onContinue = ::advanceSlide,
+                            )
+                            7 -> SlideConclusion(
+                                username = username,
+                                cardNumber = cardNumber,
+                                joinedDate = joinedDate,
+                                monthName = data.monthName,
+                                photoPath = photoPath,
+                                recentStamps = recentStamps,
+                                onFinish = onDismissRequest,
+                            )
                         }
                     }
                 }
@@ -287,9 +344,52 @@ fun MochikuStoryRecapDialog(
     }
 }
 
-/** Reusable PowerPoint-style entrance build-in component */
+/** GPU-accelerated scrolling watermark marquee rendered at ultra-low monochrome alpha. */
 @Composable
-private fun PptxBuildIn(
+private fun RecapWatermarkMarquee(
+    text: String,
+    color: Color,
+) {
+    val transition = rememberInfiniteTransition(label = "watermarkTransition")
+    val drift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 16_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "watermarkDrift",
+    )
+    val repeated = remember(text) { List(6) { text }.joinToString("   ") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(vertical = 48.dp),
+        verticalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        for (row in 0 until 4) {
+            val dir = if (row % 2 == 0) -1f else 1f
+            Text(
+                text = repeated,
+                fontSize = 68.sp,
+                fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 4.sp,
+                color = color,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.graphicsLayer {
+                    translationX = dir * (drift * 360f - 180f)
+                },
+            )
+        }
+    }
+}
+
+/** Reusable staggered entrance build-in component. */
+@Composable
+internal fun PptxBuildIn(
     index: Int,
     stepDelayMs: Int = 140,
     content: @Composable () -> Unit,
@@ -319,14 +419,57 @@ private fun PptxBuildIn(
     }
 }
 
+/** Animated integer odometer counter. */
+@Composable
+internal fun RollingCounterText(
+    targetValue: Int,
+    modifier: Modifier = Modifier,
+    prefix: String = "",
+    suffix: String = "",
+    fontSize: TextUnit = 32.sp,
+    fontWeight: FontWeight = FontWeight.Black,
+    fontFamily: FontFamily = FontFamily.Monospace,
+    color: Color = MaterialTheme.colorScheme.onBackground,
+    textAlign: TextAlign = TextAlign.Center,
+) {
+    val counter = remember(targetValue) { Animatable(0f) }
+    LaunchedEffect(targetValue) {
+        counter.snapTo(0f)
+        delay(180)
+        counter.animateTo(
+            targetValue = targetValue.toFloat(),
+            animationSpec = tween(durationMillis = 950, easing = FastOutSlowInEasing),
+        )
+    }
+    Text(
+        text = "$prefix${counter.value.toInt()}$suffix",
+        fontSize = fontSize,
+        fontWeight = fontWeight,
+        fontFamily = fontFamily,
+        color = color,
+        textAlign = textAlign,
+        modifier = modifier,
+    )
+}
+
 /** Slide 1: Journey Start */
 @Composable
 private fun SlideJourney(
     username: String,
     photoPath: String?,
     joinedDate: String,
-    allTimeDurationFormatted: String,
+    allTimeDurationMs: Long,
 ) {
+    val durationAnim = remember(allTimeDurationMs) { Animatable(0f) }
+    LaunchedEffect(allTimeDurationMs) {
+        durationAnim.snapTo(0f)
+        delay(380)
+        durationAnim.animateTo(
+            targetValue = allTimeDurationMs.toFloat(),
+            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        )
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -371,7 +514,7 @@ private fun SlideJourney(
 
         PptxBuildIn(index = 4) {
             Text(
-                text = allTimeDurationFormatted,
+                text = formatDurationMs(durationAnim.value.toLong()),
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Black,
                 fontFamily = FontFamily.Monospace,
@@ -392,7 +535,7 @@ private fun SlideJourney(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "TAP TO CONTINUE >",
+                    text = "TAP !",
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.ExtraBold,
@@ -412,7 +555,6 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
     val targetProgress = (dayOfMonth.toFloat() / daysInMonth.toFloat()).coerceIn(0f, 1f)
     val targetPercentage = targetProgress * 100f
 
-    // PPTX Counter animation
     val animatedPercent = remember { Animatable(0f) }
     val animatedBar = remember { Animatable(0f) }
 
@@ -500,295 +642,102 @@ private fun SlideMonthProgress(monthName: String, monthChaptersRead: Int) {
     }
 }
 
-/** Slide 3: Again and again this author / manga */
+/** Slide 3: Favorite Reading Weekday */
 @Composable
-private fun SlideAuthorMangaCarousel(photoPath: String?, data: MochikuRecapData) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier.weight(1.2f),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            PptxBuildIn(index = 0) {
-                StoryAvatar(photoPath = photoPath, size = 56)
-            }
-
-            PptxBuildIn(index = 1) {
-                Text(
-                    text = "Again\nand\nagain",
-                    fontSize = 42.sp,
-                    lineHeight = 46.sp,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-
-            PptxBuildIn(index = 2) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = if (data.topAuthor != null) "this author.." else "this series..",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
-                    )
-                    if (data.topAuthor != null) {
-                        Text(
-                            text = data.topAuthor,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        }
-
-        // Rolling circular covers from user's actual reading history
-        Column(
-            modifier = Modifier.weight(1f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            val list = if (data.topMangaList.isNotEmpty()) {
-                data.topMangaList.take(4)
-            } else {
-                emptyList()
-            }
-
-            if (list.isNotEmpty()) {
-                list.forEachIndexed { idx, item ->
-                    PptxBuildIn(index = 2 + idx, stepDelayMs = 120) {
-                        Box(
-                            modifier = Modifier
-                                .size(74.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                                .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (item.cover != null) {
-                                AsyncImage(
-                                    model = item.cover,
-                                    contentDescription = item.title,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.Book,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                        }
-                    }
-                }
-            } else {
-                PptxBuildIn(index = 3) {
-                    Box(
-                        modifier = Modifier
-                            .size(74.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                            .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CollectionsBookmark,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(30.dp),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** Slide 4: Favorite Manga Highlight */
-@Composable
-private fun SlideFavoriteMangaHighlight(data: MochikuRecapData) {
-    val hero = data.heroManga
+private fun SlideFavoriteWeekday(data: MochikuRecapData) {
+    val colorScheme = MaterialTheme.colorScheme
+    val weekday = data.favoriteWeekday
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PptxBuildIn(index = 0) {
-            Text(
-                text = "Recognize this manga?",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        PptxBuildIn(index = 1) {
-            Text(
-                text = if (hero != null) "that's your favorite this month!" else "read a chapter to crown your favorite!",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        PptxBuildIn(index = 2) {
-            Box(contentAlignment = Alignment.Center) {
-                Box(
-                    modifier = Modifier
-                        .size(136.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (hero?.cover != null) {
-                        AsyncImage(
-                            model = hero.cover,
-                            contentDescription = hero.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Outlined.AutoStories,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(56.dp),
-                        )
-                    }
-                }
-
-                if (hero != null) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .graphicsLayer {
-                                rotationZ = 12f
-                                translationX = 12f
-                            },
-                    ) {
-                        Text(
-                            text = "${hero.chaptersRead} chapters",
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        PptxBuildIn(index = 3) {
-            Text(
-                text = hero?.title ?: "No Manga Read Yet",
-                fontSize = 24.sp,
-                lineHeight = 30.sp,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        if (hero != null) {
-            PptxBuildIn(index = 4) {
+        if (weekday == null) {
+            PptxBuildIn(index = 0) {
                 Text(
-                    text = "${hero.chaptersRead}x Chapters · ${hero.durationFormatted}",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "and at this time,",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onBackground.copy(alpha = 0.72f),
+                    textAlign = TextAlign.Center,
                 )
             }
-        }
-    }
-}
+            PptxBuildIn(index = 1) {
+                Text(
+                    text = "NO PEAK DAY YET",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
+                    color = colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            PptxBuildIn(index = 2) {
+                Text(
+                    text = "Read chapters across the week to crown your favorite reading day.",
+                    fontSize = 15.sp,
+                    color = colorScheme.onBackground.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
+                )
+            }
+        } else {
+            PptxBuildIn(index = 0) {
+                Text(
+                    text = "and at this time,",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onBackground.copy(alpha = 0.75f),
+                    textAlign = TextAlign.Center,
+                )
+            }
 
-/** Slide 5: Read through the panels (Showcase) */
-@Composable
-private fun SlideCoverArtwork(data: MochikuRecapData) {
-    val hero = data.heroManga
+            PptxBuildIn(index = 1) {
+                Text(
+                    text = weekday.uppercase(Locale.ENGLISH),
+                    fontSize = 44.sp,
+                    lineHeight = 48.sp,
+                    fontWeight = FontWeight.Black,
+                    color = colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        PptxBuildIn(index = 0) {
-            Text(
-                text = "Turn the page..",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
+            PptxBuildIn(index = 2) {
+                Text(
+                    text = "is your favourite day to read manga",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorScheme.onBackground.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                )
+            }
 
-        PptxBuildIn(index = 1) {
-            Box(
-                modifier = Modifier
-                    .size(190.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (hero?.cover != null) {
-                    AsyncImage(
-                        model = hero.cover,
-                        contentDescription = hero.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
+            Spacer(Modifier.height(6.dp))
+
+            PptxBuildIn(index = 3) {
+                val pct = data.percentMoreThanSecondDay
+                if (data.favoriteWeekdayMinutes > 0L) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Image(
-                            painter = painterResource(R.drawable.komikku),
-                            contentDescription = "Mochiku Logo",
-                            modifier = Modifier.size(64.dp).clip(CircleShape),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "Mochiku Manga",
-                            fontSize = 13.sp,
-                            fontFamily = FontFamily.Monospace,
+                        RollingCounterText(
+                            targetValue = data.favoriteWeekdayMinutes.toInt(),
+                            suffix = if (pct != null && pct > 0) " minutes, $pct% more than your 2nd!" else " minutes read!",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
+                            color = colorScheme.onBackground,
                         )
                     }
+                } else {
+                    Text(
+                        text = "your top reading day this ${data.monthName}",
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = colorScheme.onBackground.copy(alpha = 0.65f),
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
-        }
-
-        PptxBuildIn(index = 2) {
-            Text(
-                text = hero?.title ?: "Every panel, every story, devoured.",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
     }
 }
@@ -798,28 +747,19 @@ private fun SlideCoverArtwork(data: MochikuRecapData) {
 private fun SlideMilestoneChapters(data: MochikuRecapData) {
     val chapters = data.monthChaptersRead
 
-    // Number count-up
-    val countAnim = remember { Animatable(0f) }
-    LaunchedEffect(chapters) {
-        delay(200)
-        countAnim.animateTo(
-            targetValue = chapters.toFloat(),
-            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        )
-    }
-
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         PptxBuildIn(index = 0) {
-            Text(
-                text = "${countAnim.value.toInt()} Chapters!",
+            RollingCounterText(
+                targetValue = chapters,
+                suffix = " Chapters!",
                 fontSize = 46.sp,
                 fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Default,
                 color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
             )
         }
 
@@ -855,168 +795,6 @@ private fun SlideMilestoneChapters(data: MochikuRecapData) {
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-    }
-}
-
-/** Slide 7: Vintage Thermal Paper Receipt ("Let's see your bill") with printing slide-down animation */
-@Composable
-private fun SlideThermalReceipt(
-    username: String,
-    cardNumber: String,
-    data: MochikuRecapData,
-) {
-    // Thermal receipt printing slide-down animation
-    val receiptSlideY = remember { Animatable(-100f) }
-    val receiptAlpha = remember { Animatable(0f) }
-
-    LaunchedEffect(Unit) {
-        receiptSlideY.animateTo(0f, tween(durationMillis = 650, easing = FastOutSlowInEasing))
-    }
-    LaunchedEffect(Unit) {
-        receiptAlpha.animateTo(1f, tween(durationMillis = 400))
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        PptxBuildIn(index = 0) {
-            Text(
-                text = "Let's see your bill",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-        }
-
-        // Vintage thermal receipt card with serrated / jagged bottom edge
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .graphicsLayer {
-                    translationY = receiptSlideY.value
-                    alpha = receiptAlpha.value
-                }
-                .drawBehind {
-                    val teethCount = 14
-                    val teethHeight = 12.dp.toPx()
-                    val path = Path().apply {
-                        moveTo(0f, 0f)
-                        lineTo(size.width, 0f)
-                        lineTo(size.width, size.height - teethHeight)
-                        val toothWidth = size.width / teethCount
-                        for (i in teethCount downTo 1) {
-                            val midX = (i - 0.5f) * toothWidth
-                            val startX = (i - 1) * toothWidth
-                            lineTo(midX, size.height)
-                            lineTo(startX, size.height - teethHeight)
-                        }
-                        close()
-                    }
-                    drawPath(path, color = Color(0xFFF6F6F4))
-                    drawPath(path, color = Color(0x2B000000), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
-                }
-                .padding(start = 18.dp, end = 18.dp, top = 20.dp, bottom = 28.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = "Top Manga",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace,
-                    color = Color.Black,
-                )
-
-                Spacer(Modifier.height(4.dp))
-
-                if (data.topMangaList.isNotEmpty()) {
-                    data.topMangaList.take(8).forEachIndexed { i, item ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "${i + 1}x ${item.title}",
-                                fontSize = 10.5.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF222222),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "- ${item.durationFormatted}",
-                                fontSize = 10.5.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF444444),
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "No reading history recorded this month.",
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF666666),
-                    )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = "--------------------------------------",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    color = Color(0xFF888888),
-                )
-
-                Text(
-                    text = "Total : ${data.monthDurationFormatted} playtime",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                )
-
-                Text(
-                    text = "${data.monthChaptersRead} chapters · ${data.libraryCount} titles in library",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    color = Color(0xFF555555),
-                )
-
-                Text(
-                    text = "--------------------------------------",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    color = Color(0xFF888888),
-                )
-
-                Text(
-                    text = "END OF LINE",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    textAlign = TextAlign.Center,
-                    color = Color.Black,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Text(
-                    text = "--------------------------------------",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    color = Color(0xFF888888),
                 )
             }
         }
@@ -1145,7 +923,7 @@ private fun SlideConclusion(
 }
 
 @Composable
-private fun StoryAvatar(photoPath: String?, size: Int) {
+internal fun StoryAvatar(photoPath: String?, size: Int) {
     Box(
         modifier = Modifier
             .size(size.dp)

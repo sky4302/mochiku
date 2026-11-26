@@ -85,15 +85,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.14.25
-          name: Mochiku v1.14.25
+          tag_name: v1.14.26
+          name: Mochiku v1.14.26
           body: |
-            ### Mochiku (餅ク) v1.14.25 - Browse Full-Bleed Blur & Smart Update Action Polish
+            ### Mochiku (餅ク) v1.14.26 - Monochrome Frosted Story Recap v2
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.25:**
-            - **Browse Full-Bleed Scrolling & Haze Blur**: Updated Sources and Migrate tabs so source lists scroll edge-to-edge behind the frosted capsules with Haze backdrop blur while preserving full bottom scroll clearance.
-            - **Smart Update Action Visibility**: Hidden the Hourglass smart-update interval button on manga details when "Predict next release time" (or all Smart Update options) is disabled in Settings, keeping the action row synchronized on return.
+            **What's New in v1.14.26:**
+            - **Interactive Scratch Foil on ID Card**: Added a monochrome scratch-off foil over the back barcode that auto-dissolves at 60% cleared (with a tap-to-skip fallback), haptic feedback, laser verification, and theme adaptation across all 24 color schemes.
+            - **Motion-Reel Story Recap Upgrade**: Added smooth crossfade/scale scene transitions, docked top-left avatar, scrolling background marquee watermarks, rolling odometer counters, Favorite Reading Weekday comparison, decelerating Top Series Roulette with ripple lock-on, -28deg Tilted Cover Grid zoom, and a scrollable Top Authors + Top Manga thermal receipt.
+            - **Accurate Monthly History Aggregation**: Replaced the 1-chapter-per-manga view cap with a month-range SQLDelight query (`getHistoryInRange`), making monthly duration, chapter counts, weekday stats, and 9:16 Share Cards (with author privacy masking) accurate.
             
             ---
             ### Download Links (Choose for your phone):

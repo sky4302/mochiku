@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.history.model.History
 import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.history.model.HistoryWithRelations
+import tachiyomi.domain.history.model.MonthlyHistoryEntry
 
 interface HistoryRepository {
 
@@ -22,6 +23,8 @@ interface HistoryRepository {
 
     // KMK -->
     fun getAllHistory(): Flow<List<History>>
+
+    suspend fun getHistoryInRange(sinceEpochMs: Long, untilEpochMs: Long): List<MonthlyHistoryEntry>
     // KMK <--
 
     suspend fun getHistoryByMangaId(mangaId: Long): List<History>

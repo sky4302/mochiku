@@ -8,6 +8,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,7 +35,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,15 +49,23 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,6 +99,7 @@ fun MochikuIdCard(
     var isFlipped by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
 
     // 3D rotation animation
     val rotation by animateFloatAsState(
@@ -96,13 +108,30 @@ fun MochikuIdCard(
         label = "cardFlip",
     )
 
-    // Scanner laser animation on back
+    // Scanner laser & scratch foil state on back
     var isScanning by remember { mutableStateOf(false) }
     var isVerified by remember { mutableStateOf(false) }
+    var isScratchedDone by remember { mutableStateOf(false) }
+    var showSkipHint by remember { mutableStateOf(false) }
+    var foilSessionKey by remember { mutableIntStateOf(0) }
     val laserProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(isFlipped) {
+        if (!isFlipped) {
+            isScratchedDone = false
+            showSkipHint = false
+            isVerified = false
+            foilSessionKey++
+        } else if (!isScratchedDone && !isScanning && !isVerified) {
+            showSkipHint = false
+            delay(1500)
+            showSkipHint = true
+        }
+    }
 
     fun triggerScanAndRecap() {
         if (isScanning) return
+        isScratchedDone = true
         isScanning = true
         isVerified = false
         scope.launch {
@@ -112,6 +141,7 @@ fun MochikuIdCard(
                 animationSpec = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
             )
             isVerified = true
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             delay(500)
             isScanning = false
             onLaunchRecap()
@@ -136,10 +166,11 @@ fun MochikuIdCard(
                 if (!isFlipped) {
                     isFlipped = true
                 } else if (!isScanning) {
-                    // Tap back to trigger laser scan or flip back
-                    if (!isVerified) {
+                    if (!isScratchedDone && showSkipHint) {
                         triggerScanAndRecap()
-                    } else {
+                    } else if (isScratchedDone && !isVerified) {
+                        triggerScanAndRecap()
+                    } else if (isVerified) {
                         isFlipped = false
                         isVerified = false
                     }
@@ -160,6 +191,11 @@ fun MochikuIdCard(
             // KMK <--
         } else {
             // Back Side (mirrored so text reads correctly)
+            val foilAlpha by animateFloatAsState(
+                targetValue = if (isScratchedDone) 0f else 1f,
+                animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+                label = "foilAlpha",
+            )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -172,6 +208,26 @@ fun MochikuIdCard(
                     isScanning = isScanning,
                     isVerified = isVerified,
                     scanProgress = laserProgress.value,
+                    statusText = when {
+                        isVerified -> "OPENING RECAP..."
+                        isScanning -> "SCANNING BARCODE..."
+                        !isScratchedDone && showSkipHint -> "SCRATCH FOIL · TAP TO SKIP"
+                        !isScratchedDone -> "SCRATCH FOIL TO REVEAL"
+                        else -> "TAP TO SCAN & UNLOCK RECAP"
+                    },
+                    barcodeOverlay = {
+                        if (foilAlpha > 0f) {
+                            ScratchOffFoilOverlay(
+                                sessionKey = foilSessionKey,
+                                alpha = foilAlpha,
+                                enabled = !isScratchedDone && !isScanning && !isVerified,
+                                onScratchComplete = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    triggerScanAndRecap()
+                                },
+                            )
+                        }
+                    },
                 )
                 // KMK <--
             }
@@ -387,6 +443,7 @@ internal fun MochikuIdCardBackContent(
         "TAP TO SCAN & UNLOCK RECAP"
     },
     ribbonText: String = "$username's CARD",
+    barcodeOverlay: (@Composable () -> Unit)? = null,
 ) {
     val barcodeBits = remember(barcodePayload) {
         Code128Encoder.encode(barcodePayload)
@@ -426,6 +483,8 @@ internal fun MochikuIdCardBackContent(
                             barColor = barcodeBarColor,
                         )
                     }
+
+                    barcodeOverlay?.invoke()
 
                     // Green "VERIFIED" Stamp Badge
                     if (isVerified) {
@@ -489,6 +548,176 @@ internal fun MochikuIdCardBackContent(
 
         // Vertical Ribbon Strip on Right
         MarqueeRibbon(text = ribbonText)
+    }
+}
+
+private const val FOIL_GRID_COLS = 10
+private const val FOIL_GRID_ROWS = 4
+private const val FOIL_CLEAR_THRESHOLD = 0.60f
+
+/**
+ * Monochrome silver-gray scratchable foil covering the card barcode until ~60% erased.
+ */
+@Composable
+private fun ScratchOffFoilOverlay(
+    sessionKey: Int,
+    alpha: Float,
+    enabled: Boolean,
+    onScratchComplete: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val haptic = LocalHapticFeedback.current
+    val foilSurface = colorScheme.surfaceContainerHighest
+    val foilSheen = colorScheme.onSurface.copy(alpha = 0.08f)
+    val foilPatternColor = colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+    val foilBorder = colorScheme.outlineVariant.copy(alpha = 0.55f)
+
+    val erasePath = remember(sessionKey) { Path() }
+    var pathVersion by remember(sessionKey) { mutableIntStateOf(0) }
+    var lastPoint by remember(sessionKey) { mutableStateOf<Offset?>(null) }
+    val clearedCells = remember(sessionKey) { BooleanArray(FOIL_GRID_COLS * FOIL_GRID_ROWS) }
+    var clearedCount by remember(sessionKey) { mutableIntStateOf(0) }
+    var completed by remember(sessionKey) { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                this.alpha = alpha
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
+            .clip(RoundedCornerShape(6.dp))
+            .then(
+                if (enabled) {
+                    Modifier.pointerInput(sessionKey) {
+                        val minStepPx = 4.dp.toPx()
+                        val minStepSq = minStepPx * minStepPx
+                        val brushRadiusPx = 14.dp.toPx()
+
+                        fun markPoint(offset: Offset) {
+                            if (completed || size.width <= 0 || size.height <= 0) return
+                            val minCol = (((offset.x - brushRadiusPx) / size.width) * FOIL_GRID_COLS)
+                                .toInt()
+                                .coerceIn(0, FOIL_GRID_COLS - 1)
+                            val maxCol = (((offset.x + brushRadiusPx) / size.width) * FOIL_GRID_COLS)
+                                .toInt()
+                                .coerceIn(0, FOIL_GRID_COLS - 1)
+                            val minRow = (((offset.y - brushRadiusPx) / size.height) * FOIL_GRID_ROWS)
+                                .toInt()
+                                .coerceIn(0, FOIL_GRID_ROWS - 1)
+                            val maxRow = (((offset.y + brushRadiusPx) / size.height) * FOIL_GRID_ROWS)
+                                .toInt()
+                                .coerceIn(0, FOIL_GRID_ROWS - 1)
+
+                            for (row in minRow..maxRow) {
+                                for (col in minCol..maxCol) {
+                                    val idx = row * FOIL_GRID_COLS + col
+                                    if (!clearedCells[idx]) {
+                                        clearedCells[idx] = true
+                                        clearedCount++
+                                    }
+                                }
+                            }
+                            if (clearedCount >= (FOIL_GRID_COLS * FOIL_GRID_ROWS * FOIL_CLEAR_THRESHOLD).toInt()) {
+                                completed = true
+                                onScratchComplete()
+                            }
+                        }
+
+                        detectDragGestures(
+                            onDragStart = { start ->
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                erasePath.moveTo(start.x, start.y)
+                                erasePath.lineTo(start.x + 0.1f, start.y + 0.1f)
+                                lastPoint = start
+                                markPoint(start)
+                                pathVersion++
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                val pos = change.position
+                                val prev = lastPoint
+                                if (prev == null || ((pos.x - prev.x) * (pos.x - prev.x) + (pos.y - prev.y) * (pos.y - prev.y)) >= minStepSq) {
+                                    erasePath.lineTo(pos.x, pos.y)
+                                    lastPoint = pos
+                                    markPoint(pos)
+                                    pathVersion++
+                                }
+                            },
+                        )
+                    }
+                } else {
+                    Modifier
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Base foil pattern + erase strokes in a single offscreen layer
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(foilSurface, foilSurface.copy(alpha = 0.92f), foilSurface),
+                    ),
+                )
+                .border(1.dp, foilBorder, RoundedCornerShape(6.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = "SCRATCH  MOCHIKU  SCRATCH",
+                    color = foilPatternColor,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    maxLines = 1,
+                )
+                Text(
+                    text = "MOCHIKU  SCRATCH  MOCHIKU",
+                    color = foilPatternColor.copy(alpha = 0.22f),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    maxLines = 1,
+                )
+                Text(
+                    text = "SCRATCH  MOCHIKU  SCRATCH",
+                    color = foilPatternColor,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    maxLines = 1,
+                )
+            }
+        }
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // Read pathVersion so only dragged frames redraw the mask
+            pathVersion.let {
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.Transparent, foilSheen, Color.Transparent),
+                    ),
+                )
+                drawPath(
+                    path = erasePath,
+                    color = Color.Transparent,
+                    style = Stroke(
+                        width = 28.dp.toPx(),
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round,
+                    ),
+                    blendMode = BlendMode.Clear,
+                )
+            }
+        }
     }
 }
 // KMK <--

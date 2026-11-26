@@ -88,4 +88,22 @@ H.last_read,
 H.time_read
 FROM history H
 WHERE H.last_read > 0;
+
+getHistoryInRange:
+SELECT
+    M._id AS mangaId,
+    M.title AS title,
+    M.author AS author,
+    M.artist AS artist,
+    M.thumbnail_url AS thumbnailUrl,
+    M.source AS sourceId,
+    M.favorite AS isFavorite,
+    M.cover_last_modified AS coverLastModified,
+    H.last_read AS readAt,
+    H.time_read AS readDuration
+FROM history H
+INNER JOIN chapters C ON C._id = H.chapter_id
+INNER JOIN mangas M ON M._id = C.manga_id
+WHERE H.last_read >= :sinceDate
+AND H.last_read < :untilDate;
 -- KMK <--

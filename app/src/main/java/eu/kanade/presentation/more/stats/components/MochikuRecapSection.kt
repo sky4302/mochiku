@@ -138,6 +138,13 @@ fun MochikuRecapSection(
                     chaptersRead = it.chaptersRead,
                 )
             }.orEmpty(),
+            topAuthorList = recapData?.topAuthorList?.map {
+                RecapShareAuthorRow(
+                    author = it.author,
+                    durationFormatted = it.durationFormatted,
+                    chaptersRead = it.chaptersRead,
+                )
+            }.orEmpty(),
             unlockedStamps = passportStamps.filter { it.isUnlocked },
         )
     }
@@ -422,6 +429,7 @@ fun MochikuRecapSection(
                 username = username,
                 cardNumberSuffix = cardNumber.takeLast(4),
                 topMangaList = shareData.topMangaList,
+                topAuthorList = shareData.topAuthorList,
                 chaptersRead = effectiveChapters,
                 durationFormatted = effectiveDuration,
                 modifier = Modifier.fillMaxWidth(0.92f),

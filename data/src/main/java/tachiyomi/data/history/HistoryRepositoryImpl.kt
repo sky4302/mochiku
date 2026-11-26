@@ -8,8 +8,10 @@ import tachiyomi.data.DatabaseHandler
 import tachiyomi.domain.history.model.History
 import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.history.model.HistoryWithRelations
+import tachiyomi.domain.history.model.MonthlyHistoryEntry
 import tachiyomi.domain.history.repository.HistoryRepository
 import tachiyomi.domain.manga.model.Manga
+import java.util.Date
 
 class HistoryRepositoryImpl(
     private val handler: DatabaseHandler,
@@ -56,6 +58,16 @@ class HistoryRepositoryImpl(
     override fun getAllHistory(): Flow<List<History>> {
         return handler.subscribeToList {
             historyQueries.getAllHistory(HistoryMapper::mapHistory)
+        }
+    }
+
+    override suspend fun getHistoryInRange(sinceEpochMs: Long, untilEpochMs: Long): List<MonthlyHistoryEntry> {
+        return handler.awaitList {
+            historyQueries.getHistoryInRange(
+                sinceDate = Date(sinceEpochMs),
+                untilDate = Date(untilEpochMs),
+                mapper = HistoryMapper::mapMonthlyHistoryEntry,
+            )
         }
     }
     // KMK <--
