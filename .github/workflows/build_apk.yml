@@ -85,16 +85,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.14.26
-          name: Mochiku v1.14.26
+          tag_name: v1.14.27
+          name: Mochiku v1.14.27
           body: |
-            ### Mochiku (餅ク) v1.14.26 - Monochrome Frosted Story Recap v2
+            ### Mochiku (餅ク) v1.14.27 - Pull-Down Hero Header & Auto-Flip Recap Card
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.26:**
-            - **Interactive Scratch Foil on ID Card**: Added a monochrome scratch-off foil over the back barcode that auto-dissolves at 60% cleared (with a tap-to-skip fallback), haptic feedback, laser verification, and theme adaptation across all 24 color schemes.
-            - **Motion-Reel Story Recap Upgrade**: Added smooth crossfade/scale scene transitions, docked top-left avatar, scrolling background marquee watermarks, rolling odometer counters, Favorite Reading Weekday comparison, decelerating Top Series Roulette with ripple lock-on, -28deg Tilted Cover Grid zoom, and a scrollable Top Authors + Top Manga thermal receipt.
-            - **Accurate Monthly History Aggregation**: Replaced the 1-chapter-per-manga view cap with a month-range SQLDelight query (`getHistoryInRange`), making monthly duration, chapter counts, weekday stats, and 9:16 Share Cards (with author privacy masking) accurate.
+            **What's New in v1.14.27:**
+            - **Pull-Down Dotted Hero Header on More**: Wrapped the profile greeting, ID card, and clickable downward chevron in a rounded surface container with a monochrome dot-matrix pattern, subtle vertical `MOCHIKU` watermark, and damped top pull-down gesture (`76.dp` threshold with haptic confirmation).
+            - **Full-Screen Auto-Flip & Scratch Verification**: Tapping the `MochikuIdCard` (on More or Statistics), tapping the header chevron, or pulling down at the top of More launches a centered full-screen Story Recap entrance where the ID card scales in, pauses briefly, auto-flips 180deg to reveal the monochrome scratch foil, verifies the barcode (`VERIFIED`), and transitions into Slide 0.
+            - **Unified Entry Points**: Edit pencil icons continue to open profile editing directly, while the `Story Rewind` button in Statistics jumps straight to the recap slides.
             
             ---
             ### Download Links (Choose for your phone):

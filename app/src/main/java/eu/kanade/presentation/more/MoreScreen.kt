@@ -1,15 +1,21 @@
 package eu.kanade.presentation.more
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Label
@@ -29,12 +35,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.more.profile.MochikuProfileHeader
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
@@ -47,6 +67,7 @@ import exh.pref.DelegateSourcePreferences
 import exh.source.ExhPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.launch
 import tachiyomi.core.common.Constants
 import tachiyomi.domain.history.model.StampState
 import tachiyomi.i18n.MR
@@ -92,15 +113,78 @@ fun MoreScreen(
     val delegateSourcePreferences = remember { Injekt.get<DelegateSourcePreferences>() }
     // SY <--
 
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    val listState = rememberLazyListState()
+    val pullThresholdPx = remember(density) { with(density) { 76.dp.toPx() } }
+    val maxPullPx = remember(density) { with(density) { 120.dp.toPx() } }
+    val pullOffsetPx = remember { Animatable(0f) }
+    var armedHapticFired by remember { mutableStateOf(false) }
+    var pullLaunchNonce by remember { mutableIntStateOf(0) }
+
+    val pullDownConnection = remember(listState, pullThresholdPx, maxPullPx) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && pullOffsetPx.value > 0f && available.y < 0f) {
+                    val consumedY = available.y.coerceAtLeast(-pullOffsetPx.value)
+                    val next = (pullOffsetPx.value + consumedY).coerceAtLeast(0f)
+                    if (next < pullThresholdPx) armedHapticFired = false
+                    scope.launch { pullOffsetPx.snapTo(next) }
+                    return Offset(0f, consumedY)
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                val atTop = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+                if (source == NestedScrollSource.UserInput && atTop && available.y > 0f) {
+                    val next = (pullOffsetPx.value + available.y * 0.45f).coerceIn(0f, maxPullPx)
+                    if (next >= pullThresholdPx && !armedHapticFired) {
+                        armedHapticFired = true
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    scope.launch { pullOffsetPx.snapTo(next) }
+                    return Offset(0f, available.y)
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                if (pullOffsetPx.value > 0f) {
+                    val shouldLaunch = pullOffsetPx.value >= pullThresholdPx
+                    armedHapticFired = false
+                    scope.launch {
+                        if (shouldLaunch) pullLaunchNonce++
+                        pullOffsetPx.animateTo(0f, spring(dampingRatio = 0.78f, stiffness = 420f))
+                    }
+                    return available
+                }
+                return Velocity.Zero
+            }
+        }
+    }
+
     Scaffold { contentPadding ->
+        val layoutDirection = LocalLayoutDirection.current
         ScrollbarLazyColumn(
-            // KMK: use contentPadding as preferable padding for ScrollbarLazyColumn when not using stickyHeader
-            contentPadding = contentPadding,
+            modifier = Modifier.nestedScroll(pullDownConnection),
+            state = listState,
+            // Top padding passes directly into MochikuProfileHeader so the dotted hero extends edge-to-edge
+            contentPadding = PaddingValues(
+                start = contentPadding.calculateStartPadding(layoutDirection),
+                end = contentPadding.calculateEndPadding(layoutDirection),
+                bottom = contentPadding.calculateBottomPadding(),
+            ),
         ) {
             item {
                 MochikuProfileHeader(
                     onClickStats = onClickStats,
                     recentStamps = passportStamps,
+                    topPadding = contentPadding.calculateTopPadding(),
+                    pullOffsetProvider = { pullOffsetPx.value },
+                    pullThresholdPx = pullThresholdPx,
+                    pullLaunchNonce = pullLaunchNonce,
                 )
             }
             item {

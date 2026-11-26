@@ -1,7 +1,6 @@
 package eu.kanade.presentation.more.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -34,10 +35,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
@@ -53,8 +59,14 @@ fun MochikuProfileHeader(
     onClickStats: () -> Unit,
     modifier: Modifier = Modifier,
     recentStamps: ImmutableList<StampState> = persistentListOf(),
+    topPadding: Dp = 0.dp,
+    pullOffsetProvider: () -> Float = { 0f },
+    pullThresholdPx: Float = 1f,
+    pullLaunchNonce: Int = 0,
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
+    val colorScheme = MaterialTheme.colorScheme
     var username by remember { mutableStateOf(MochikuProfileStore.getUsername(context)) }
     var photoPath by remember { mutableStateOf(MochikuProfileStore.getPhotoPath(context)) }
     val cardNumber = remember { MochikuProfileStore.getCardNumber(context) }
@@ -62,6 +74,12 @@ fun MochikuProfileHeader(
 
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showStoryRecapDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pullLaunchNonce) {
+        if (pullLaunchNonce > 0) {
+            showStoryRecapDialog = true
+        }
+    }
 
     // Read live stats asynchronously from database
     val recapData by produceState<MochikuRecapData?>(initialValue = null) {
@@ -72,68 +90,152 @@ fun MochikuProfileHeader(
     val displayChapters = recapData?.monthChaptersRead ?: 0
     val displayLibraryCount = recapData?.libraryCount ?: 0
 
+    val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val heroShape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        // Top Greeting (Matches Mochy-Music: "Hello again, Sky!")
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        // Dotted-matrix expandable hero card matching Mochy-Music profile header
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(heroShape)
+                .background(colorScheme.surfaceContainerLow)
+                .clipToBounds()
+                .drawWithCache {
+                    val spacing = 24.dp.toPx()
+                    val radius = 1.1.dp.toPx()
+                    onDrawBehind {
+                        var x = spacing / 2f
+                        while (x < size.width) {
+                            var y = spacing / 2f
+                            while (y < size.height) {
+                                drawCircle(dotColor, radius = radius, center = Offset(x, y))
+                                y += spacing
+                            }
+                            x += spacing
+                        }
+                    }
+                },
         ) {
+            Text(
+                text = "MOCHIKU",
+                fontSize = 84.sp,
+                fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Monospace,
+                color = colorScheme.onBackground.copy(alpha = 0.045f),
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .graphicsLayer {
+                        rotationZ = 90f
+                        translationX = 110f
+                    },
+            )
+
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
+                    .fillMaxWidth()
+                    .padding(
+                        top = topPadding + 12.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 6.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Text(
-                    text = "Hello again, $username!",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "Mochiku Manga Profile",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = FontFamily.Monospace,
-                )
-            }
+                // Top Greeting (Matches Mochy-Music: "Hello again, Sky!")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                    ) {
+                        Text(
+                            text = "Hello again, $username!",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "Mochiku Manga Profile",
+                            fontSize = 12.sp,
+                            color = colorScheme.onSurfaceVariant,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
 
-            OutlinedButton(
-                onClick = { showEditProfileDialog = true },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-            ) {
-                Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Edit Profile", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+                    OutlinedButton(
+                        onClick = { showEditProfileDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorScheme.primary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    ) {
+                        Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Edit Profile", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+                    }
+                }
+
+                // The Signature Mochy 3D ID Card (tapping opens centered auto-flip + scratch stage)
+                MochikuIdCard(
+                    username = username,
+                    photoPath = photoPath,
+                    cardNumber = cardNumber,
+                    joinedDate = joinedDate,
+                    onEditProfileClick = { showEditProfileDialog = true },
+                    onLaunchRecap = { showStoryRecapDialog = true },
+                    recentStamps = recentStamps,
+                )
+
+                val pullPx = pullOffsetProvider()
+                val pullProgress = (pullPx / pullThresholdPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
+                val pullExtraDp = with(density) { (pullPx * 0.55f).toDp() }
+                if (pullExtraDp > 0.dp) {
+                    Spacer(Modifier.height(pullExtraDp))
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(50))
+                        .clickable { showStoryRecapDialog = true }
+                        .padding(vertical = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.KeyboardArrowDown,
+                        contentDescription = "Open Story Recap",
+                        tint = if (pullProgress >= 1f) colorScheme.primary else colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .graphicsLayer {
+                                translationY = pullProgress * 6f
+                                val s = 1f + pullProgress * 0.2f
+                                scaleX = s
+                                scaleY = s
+                            },
+                    )
+                }
             }
         }
-
-        // The Signature Mochy 3D ID Card
-        MochikuIdCard(
-            username = username,
-            photoPath = photoPath,
-            cardNumber = cardNumber,
-            joinedDate = joinedDate,
-            onEditProfileClick = { showEditProfileDialog = true },
-            onLaunchRecap = { showStoryRecapDialog = true },
-            recentStamps = recentStamps,
-        )
 
         // Reading Time Card (Matches Mochy: "2h 9m Total Listening time | View Stats >")
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            color = colorScheme.surfaceContainer,
+            border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.5f)),
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .clickable(onClick = onClickStats),
         ) {
             Row(
@@ -150,7 +252,7 @@ fun MochikuProfileHeader(
                     Icon(
                         imageVector = Icons.Outlined.QueryStats,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                     )
 
@@ -160,12 +262,12 @@ fun MochikuProfileHeader(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = colorScheme.onSurface,
                         )
                         Text(
                             text = "This Month · $displayChapters ch read",
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -178,12 +280,12 @@ fun MochikuProfileHeader(
                         text = "View Stats",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = colorScheme.primary,
                     )
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp),
                     )
                 }
@@ -191,9 +293,9 @@ fun MochikuProfileHeader(
         }
 
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+            color = colorScheme.outlineVariant.copy(alpha = 0.4f),
             thickness = 1.dp,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
 
@@ -212,7 +314,7 @@ fun MochikuProfileHeader(
         )
     }
 
-    // Fullscreen Story Recap Dialog
+    // Fullscreen Story Recap Dialog (starts with centered auto-flip + scratch stage)
     if (showStoryRecapDialog) {
         MochikuStoryRecapDialog(
             username = username,
@@ -224,6 +326,7 @@ fun MochikuProfileHeader(
             libraryCount = displayLibraryCount,
             onDismissRequest = { showStoryRecapDialog = false },
             recentStamps = recentStamps,
+            startWithCardVerify = true,
         )
     }
 }

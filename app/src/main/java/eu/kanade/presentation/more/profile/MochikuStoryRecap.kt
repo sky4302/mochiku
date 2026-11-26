@@ -26,12 +26,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,6 +54,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -76,6 +82,7 @@ import coil3.compose.AsyncImage
 import eu.kanade.presentation.more.stats.components.PassportStampBadge
 import eu.kanade.tachiyomi.R
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import tachiyomi.domain.history.model.StampState
 import java.time.LocalDate
 import java.util.Locale
@@ -93,12 +100,14 @@ fun MochikuStoryRecapDialog(
     libraryCount: Int,
     onDismissRequest: () -> Unit,
     recentStamps: List<StampState> = emptyList(),
+    startWithCardVerify: Boolean = false,
 ) {
     // Query monthly reading history from Komikku's SQLite database
     val recapData by produceState<MochikuRecapData?>(initialValue = null) {
         value = MochikuRecapDataEngine.loadCurrentMonthRecap()
     }
 
+    var isCardVerified by remember(startWithCardVerify) { mutableStateOf(!startWithCardVerify) }
     var currentSlide by remember { mutableIntStateOf(0) }
     val haptic = LocalHapticFeedback.current
 
@@ -120,7 +129,10 @@ fun MochikuStoryRecapDialog(
 
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
     ) {
         val colorScheme = MaterialTheme.colorScheme
         val backgroundColor = colorScheme.background
@@ -136,17 +148,19 @@ fun MochikuStoryRecapDialog(
             val data = recapData
 
             // Low-opacity scrolling watermark marquee behind the cached dot matrix
-            if (data != null) {
-                val watermarkLabel = when (currentSlide) {
+            val watermarkLabel = if (!isCardVerified || data == null) {
+                "MOCHIKU"
+            } else {
+                when (currentSlide) {
                     1 -> data.monthName.uppercase(Locale.ENGLISH)
                     2 -> (data.favoriteWeekday ?: data.monthName).uppercase(Locale.ENGLISH)
                     else -> "MOCHIKU"
                 }
-                RecapWatermarkMarquee(
-                    text = watermarkLabel,
-                    color = onBackgroundColor.copy(alpha = 0.045f),
-                )
             }
+            RecapWatermarkMarquee(
+                text = watermarkLabel,
+                color = onBackgroundColor.copy(alpha = 0.045f),
+            )
 
             // Cached Mochy-style dot-matrix texture
             Spacer(
@@ -169,7 +183,61 @@ fun MochikuStoryRecapDialog(
                     },
             )
 
-            if (data == null) {
+            if (!isCardVerified) {
+                // Stage 0/1: Centered Front Card -> Auto-Flip 180deg -> Scratch Foil -> Laser Verify
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.systemBars)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = colorScheme.surfaceContainer,
+                        modifier = Modifier.size(30.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Image(
+                                painter = painterResource(R.drawable.komikku),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape),
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = "Close",
+                            tint = onBackgroundColor,
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.systemBars)
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RecapCardVerifyStage(
+                        username = username,
+                        photoPath = photoPath,
+                        cardNumber = cardNumber,
+                        joinedDate = joinedDate,
+                        recentStamps = recentStamps,
+                        onVerified = { isCardVerified = true },
+                    )
+                }
+            } else if (data == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -211,7 +279,8 @@ fun MochikuStoryRecapDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 18.dp, start = 16.dp, end = 16.dp),
+                        .windowInsetsPadding(WindowInsets.systemBars)
+                        .padding(top = 12.dp, start = 16.dp, end = 16.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -297,6 +366,7 @@ fun MochikuStoryRecapDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.systemBars)
                         .padding(horizontal = 24.dp, vertical = 72.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -337,6 +407,167 @@ fun MochikuStoryRecapDialog(
                                 onFinish = onDismissRequest,
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Full-screen Stage 0/1: centers the front ID card, auto-flips 180deg in 3D, presents the
+ * monochrome scratch foil + "scratch!" cue, and runs laser verification into Slide 1.
+ */
+@Composable
+private fun RecapCardVerifyStage(
+    username: String,
+    photoPath: String?,
+    cardNumber: String,
+    joinedDate: String,
+    recentStamps: List<StampState>,
+    onVerified: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+
+    val entryScale = remember { Animatable(0.86f) }
+    val cardRotation = remember { Animatable(0f) }
+    val laserProgress = remember { Animatable(0f) }
+
+    var autoFlipDone by remember { mutableStateOf(false) }
+    var isScratchedDone by remember { mutableStateOf(false) }
+    var showSkipCue by remember { mutableStateOf(false) }
+    var isScanning by remember { mutableStateOf(false) }
+    var isVerified by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        entryScale.animateTo(1f, tween(durationMillis = 240, easing = FastOutSlowInEasing))
+        delay(220)
+        cardRotation.animateTo(180f, tween(durationMillis = 600, easing = FastOutSlowInEasing))
+        autoFlipDone = true
+        delay(1500)
+        showSkipCue = true
+    }
+
+    fun triggerVerifySweep() {
+        if (isScanning || isVerified) return
+        isScratchedDone = true
+        isScanning = true
+        scope.launch {
+            laserProgress.snapTo(0f)
+            laserProgress.animateTo(1f, tween(durationMillis = 950, easing = FastOutSlowInEasing))
+            isVerified = true
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            delay(480)
+            isScanning = false
+            onVerified()
+        }
+    }
+
+    val foilAlpha by animateFloatAsState(
+        targetValue = if (isScratchedDone) 0f else 1f,
+        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+        label = "verifyFoilAlpha",
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(22.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(ID_CARD_ASPECT)
+                .graphicsLayer {
+                    scaleX = entryScale.value
+                    scaleY = entryScale.value
+                    rotationY = cardRotation.value
+                    cameraDistance = 14f * density.density
+                }
+                .clip(RoundedCornerShape(22.dp))
+                .background(colorScheme.surfaceContainerHigh)
+                .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(22.dp)),
+        ) {
+            if (cardRotation.value <= 90f) {
+                MochikuIdCardFrontContent(
+                    username = username,
+                    photoPath = photoPath,
+                    cardNumber = cardNumber,
+                    joinedDate = joinedDate,
+                    onEditProfileClick = null,
+                    hintText = null,
+                    recentStamps = recentStamps,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { rotationY = 180f },
+                ) {
+                    MochikuIdCardBackContent(
+                        cardNumber = cardNumber,
+                        username = username,
+                        isScanning = isScanning,
+                        isVerified = isVerified,
+                        scanProgress = laserProgress.value,
+                        statusText = when {
+                            isVerified -> "VERIFIED"
+                            isScanning -> "SCANNING BARCODE..."
+                            else -> null
+                        },
+                        barcodeOverlay = {
+                            if (foilAlpha > 0f) {
+                                ScratchOffFoilOverlay(
+                                    sessionKey = 0,
+                                    alpha = foilAlpha,
+                                    enabled = autoFlipDone && !isScratchedDone && !isScanning && !isVerified,
+                                    onScratchComplete = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        triggerVerifySweep()
+                                    },
+                                )
+                            }
+                        },
+                    )
+                }
+            }
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.height(52.dp),
+        ) {
+            AnimatedVisibility(
+                visible = autoFlipDone && !isScratchedDone && !isScanning && !isVerified,
+                enter = fadeIn(tween(240)),
+                exit = fadeOut(tween(180)),
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = "scratch!",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        color = colorScheme.onBackground,
+                    )
+                    if (showSkipCue) {
+                        Text(
+                            text = "TAP TO SKIP",
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onBackground.copy(alpha = 0.55f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .clickable(onClick = ::triggerVerifySweep)
+                                .padding(horizontal = 12.dp, vertical = 2.dp),
+                        )
                     }
                 }
             }

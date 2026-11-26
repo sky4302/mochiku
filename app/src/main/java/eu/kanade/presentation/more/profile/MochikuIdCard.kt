@@ -1,9 +1,5 @@
 package eu.kanade.presentation.more.profile
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,12 +31,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +58,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -75,8 +68,6 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import eu.kanade.presentation.more.stats.components.PassportStampBadge
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import tachiyomi.domain.history.model.StampState
 
 // KMK -->
@@ -96,142 +87,28 @@ fun MochikuIdCard(
     recentStamps: List<StampState> = emptyList(),
     // KMK <--
 ) {
-    var isFlipped by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val haptic = LocalHapticFeedback.current
-
-    // 3D rotation animation
-    val rotation by animateFloatAsState(
-        targetValue = if (isFlipped) 180f else 0f,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
-        label = "cardFlip",
-    )
-
-    // Scanner laser & scratch foil state on back
-    var isScanning by remember { mutableStateOf(false) }
-    var isVerified by remember { mutableStateOf(false) }
-    var isScratchedDone by remember { mutableStateOf(false) }
-    var showSkipHint by remember { mutableStateOf(false) }
-    var foilSessionKey by remember { mutableIntStateOf(0) }
-    val laserProgress = remember { Animatable(0f) }
-
-    LaunchedEffect(isFlipped) {
-        if (!isFlipped) {
-            isScratchedDone = false
-            showSkipHint = false
-            isVerified = false
-            foilSessionKey++
-        } else if (!isScratchedDone && !isScanning && !isVerified) {
-            showSkipHint = false
-            delay(1500)
-            showSkipHint = true
-        }
-    }
-
-    fun triggerScanAndRecap() {
-        if (isScanning) return
-        isScratchedDone = true
-        isScanning = true
-        isVerified = false
-        scope.launch {
-            laserProgress.snapTo(0f)
-            laserProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
-            )
-            isVerified = true
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            delay(500)
-            isScanning = false
-            onLaunchRecap()
-        }
-    }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(ID_CARD_ASPECT)
-            .graphicsLayer {
-                rotationY = rotation
-                cameraDistance = 14f * density.density
-            }
             .clip(RoundedCornerShape(22.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(22.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-            ) {
-                if (!isFlipped) {
-                    isFlipped = true
-                } else if (!isScanning) {
-                    if (!isScratchedDone && showSkipHint) {
-                        triggerScanAndRecap()
-                    } else if (isScratchedDone && !isVerified) {
-                        triggerScanAndRecap()
-                    } else if (isVerified) {
-                        isFlipped = false
-                        isVerified = false
-                    }
-                }
-            },
+                onClick = onLaunchRecap,
+            ),
     ) {
-        if (rotation <= 90f) {
-            // Front Side
-            // KMK -->
-            MochikuIdCardFrontContent(
-                username = username,
-                photoPath = photoPath,
-                cardNumber = cardNumber,
-                joinedDate = joinedDate,
-                onEditProfileClick = onEditProfileClick,
-                recentStamps = recentStamps,
-            )
-            // KMK <--
-        } else {
-            // Back Side (mirrored so text reads correctly)
-            val foilAlpha by animateFloatAsState(
-                targetValue = if (isScratchedDone) 0f else 1f,
-                animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
-                label = "foilAlpha",
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer { rotationY = 180f },
-            ) {
-                // KMK -->
-                MochikuIdCardBackContent(
-                    cardNumber = cardNumber,
-                    username = username,
-                    isScanning = isScanning,
-                    isVerified = isVerified,
-                    scanProgress = laserProgress.value,
-                    statusText = when {
-                        isVerified -> "OPENING RECAP..."
-                        isScanning -> "SCANNING BARCODE..."
-                        !isScratchedDone && showSkipHint -> "SCRATCH FOIL · TAP TO SKIP"
-                        !isScratchedDone -> "SCRATCH FOIL TO REVEAL"
-                        else -> "TAP TO SCAN & UNLOCK RECAP"
-                    },
-                    barcodeOverlay = {
-                        if (foilAlpha > 0f) {
-                            ScratchOffFoilOverlay(
-                                sessionKey = foilSessionKey,
-                                alpha = foilAlpha,
-                                enabled = !isScratchedDone && !isScanning && !isVerified,
-                                onScratchComplete = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    triggerScanAndRecap()
-                                },
-                            )
-                        }
-                    },
-                )
-                // KMK <--
-            }
-        }
+        MochikuIdCardFrontContent(
+            username = username,
+            photoPath = photoPath,
+            cardNumber = cardNumber,
+            joinedDate = joinedDate,
+            onEditProfileClick = onEditProfileClick,
+            hintText = "TAP TO UNLOCK RECAP >",
+            recentStamps = recentStamps,
+        )
     }
 }
 
@@ -559,7 +436,7 @@ private const val FOIL_CLEAR_THRESHOLD = 0.60f
  * Monochrome silver-gray scratchable foil covering the card barcode until ~60% erased.
  */
 @Composable
-private fun ScratchOffFoilOverlay(
+internal fun ScratchOffFoilOverlay(
     sessionKey: Int,
     alpha: Float,
     enabled: Boolean,

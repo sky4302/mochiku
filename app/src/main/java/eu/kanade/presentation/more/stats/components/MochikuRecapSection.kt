@@ -88,6 +88,7 @@ fun MochikuRecapSection(
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showReceiptDialog by remember { mutableStateOf(false) }
     var showStoryDialog by remember { mutableStateOf(false) }
+    var startWithCardVerify by remember { mutableStateOf(false) }
     // KMK -->
     var shareInitialPage by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(externalSharePage) {
@@ -216,14 +217,17 @@ fun MochikuRecapSection(
             }
         }
 
-        // The Signature Mochy 3D ID Card with Tap-to-Flip and Laser Scanning Barcode
+        // The Signature Mochy 3D ID Card (tapping opens centered auto-flip + scratch stage)
         MochikuIdCard(
             username = username,
             photoPath = photoPath,
             cardNumber = cardNumber,
             joinedDate = joinedDate,
             onEditProfileClick = { showEditProfileDialog = true },
-            onLaunchRecap = { showStoryDialog = true },
+            onLaunchRecap = {
+                startWithCardVerify = true
+                showStoryDialog = true
+            },
             // KMK -->
             recentStamps = passportStamps,
             // KMK <--
@@ -291,7 +295,10 @@ fun MochikuRecapSection(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Button(
-                        onClick = { showStoryDialog = true },
+                        onClick = {
+                            startWithCardVerify = false
+                            showStoryDialog = true
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(42.dp),
@@ -504,6 +511,7 @@ fun MochikuRecapSection(
             onDismissRequest = { showStoryDialog = false },
             // KMK -->
             recentStamps = passportStamps,
+            startWithCardVerify = startWithCardVerify,
             // KMK <--
         )
     }
