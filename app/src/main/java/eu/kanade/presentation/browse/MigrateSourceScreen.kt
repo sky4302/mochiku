@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -31,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.domain.source.model.installedExtension
@@ -126,8 +129,13 @@ private fun MigrateSourceList(
         onChangeSearchQuery("")
     }
 
+    val layoutDirection = LocalLayoutDirection.current
     Column(
-        modifier = Modifier.padding(contentPadding),
+        modifier = Modifier.padding(
+            top = contentPadding.calculateTopPadding(),
+            start = contentPadding.calculateStartPadding(layoutDirection),
+            end = contentPadding.calculateEndPadding(layoutDirection),
+        ),
     ) {
         // KMK <--
         Row(
@@ -185,7 +193,10 @@ private fun MigrateSourceList(
 
             FastScrollLazyColumn(
                 state = lazyListState,
-                contentPadding = PaddingValues(top = searchBoxHeight),
+                contentPadding = PaddingValues(
+                    top = searchBoxHeight,
+                    bottom = contentPadding.calculateBottomPadding(),
+                ),
                 // KMK <--
             ) {
                 items(

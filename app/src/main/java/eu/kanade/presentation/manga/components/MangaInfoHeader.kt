@@ -99,6 +99,7 @@ import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.findChildOfType
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_NON_COMPLETED
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_OUTSIDE_RELEASE_PERIOD
 import tachiyomi.domain.manga.interactor.FetchInterval
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
@@ -251,8 +252,9 @@ fun MangaActionRow(
     modifier: Modifier = Modifier,
 ) {
     // KMK -->
-    val libraryPreferences: LibraryPreferences = Injekt.get()
-    val restrictions = libraryPreferences.autoUpdateMangaRestrictions().get()
+    val libraryPreferences: LibraryPreferences = remember { Injekt.get() }
+    val restrictions by remember { libraryPreferences.autoUpdateMangaRestrictions() }.collectAsState()
+    val showPredictInterval = MANGA_OUTSIDE_RELEASE_PERIOD in restrictions
     val notSkipCompleted = MANGA_NON_COMPLETED !in restrictions || status != SManga.COMPLETED.toLong()
     val selectedInterval by remember(interval) { mutableIntStateOf(if (interval < 0) -interval else 0) }
     // KMK <--
@@ -288,35 +290,37 @@ fun MangaActionRow(
             onClick = onAddToLibraryClicked,
             onLongClick = onEditCategory,
         )
-        MangaActionButton(
-            title = when (nextUpdateDays) {
-                null -> stringResource(MR.strings.not_applicable)
-                0 -> stringResource(MR.strings.manga_interval_expected_update_soon)
-                // KMK -->
-                FetchInterval.MANUAL_DISABLE -> stringResource(MR.strings.disabled)
+        if (showPredictInterval) {
+            MangaActionButton(
+                title = when (nextUpdateDays) {
+                    null -> stringResource(MR.strings.not_applicable)
+                    0 -> stringResource(MR.strings.manga_interval_expected_update_soon)
+                    // KMK -->
+                    FetchInterval.MANUAL_DISABLE -> stringResource(MR.strings.disabled)
+                    // KMK <--
+                    else -> pluralStringResource(
+                        MR.plurals.day,
+                        count = nextUpdateDays,
+                        nextUpdateDays,
+                    )
+                },
+                icon = Icons.Default.HourglassEmpty
+                    // KMK -->
+                    .takeIf { nextUpdateDays != FetchInterval.MANUAL_DISABLE }
+                    ?: Icons.Default.HourglassDisabled,
                 // KMK <--
-                else -> pluralStringResource(
-                    MR.plurals.day,
-                    count = nextUpdateDays,
-                    nextUpdateDays,
-                )
-            },
-            icon = Icons.Default.HourglassEmpty
-                // KMK -->
-                .takeIf { nextUpdateDays != FetchInterval.MANUAL_DISABLE }
-                ?: Icons.Default.HourglassDisabled,
-            // KMK <--
-            color = if (isUserIntervalMode ||
-                // KMK -->
-                nextUpdateDays?.let { it <= 1 } == true
-                // KMK <--
-            ) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                defaultActionButtonColor
-            },
-            onClick = { onEditIntervalClicked?.invoke() },
-        )
+                color = if (isUserIntervalMode ||
+                    // KMK -->
+                    nextUpdateDays?.let { it <= 1 } == true
+                    // KMK <--
+                ) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    defaultActionButtonColor
+                },
+                onClick = { onEditIntervalClicked?.invoke() },
+            )
+        }
         MangaActionButton(
             title = if (trackingCount == 0) {
                 stringResource(MR.strings.manga_tracking_tab)

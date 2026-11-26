@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -31,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import eu.kanade.domain.source.model.installedExtension
@@ -91,76 +94,86 @@ fun SourcesScreen(
             modifier = Modifier.padding(contentPadding),
         )
         // KMK -->
-        else -> Box(
-            modifier = Modifier.padding(contentPadding),
-        ) {
-            val density = LocalDensity.current
-            var searchBoxHeight by remember { mutableStateOf(SOURCE_SEARCH_BOX_HEIGHT) }
-
-            FastScrollLazyColumn(
-                state = lazyListState,
-                contentPadding = PaddingValues(top = searchBoxHeight),
-                // KMK <--
+        else -> {
+            val layoutDirection = LocalLayoutDirection.current
+            Box(
+                modifier = Modifier.padding(
+                    top = contentPadding.calculateTopPadding(),
+                    start = contentPadding.calculateStartPadding(layoutDirection),
+                    end = contentPadding.calculateEndPadding(layoutDirection),
+                ),
             ) {
-                state.items.forEach { model ->
-                    when (model) {
-                        is SourceUiModel.Header -> {
-                            stickyHeader(
-                                key = "$STICKY_HEADER_KEY_PREFIX-header-${model.hashCode()}",
-                                contentType = "header",
-                            ) {
-                                SourceHeader(
-                                    modifier = Modifier
-                                        .animateItemFastScroll()
-                                        .background(MaterialTheme.colorScheme.background)
-                                        .fillMaxWidth(),
-                                    language = model.language,
-                                    // SY -->
-                                    isCategory = model.isCategory,
-                                    // SY <--
-                                )
+                val density = LocalDensity.current
+                var searchBoxHeight by remember { mutableStateOf(SOURCE_SEARCH_BOX_HEIGHT) }
+
+                FastScrollLazyColumn(
+                    state = lazyListState,
+                    contentPadding = PaddingValues(
+                        top = searchBoxHeight,
+                        bottom = contentPadding.calculateBottomPadding(),
+                    ),
+                    // KMK <--
+                ) {
+                    state.items.forEach { model ->
+                        when (model) {
+                            is SourceUiModel.Header -> {
+                                stickyHeader(
+                                    key = "$STICKY_HEADER_KEY_PREFIX-header-${model.hashCode()}",
+                                    contentType = "header",
+                                ) {
+                                    SourceHeader(
+                                        modifier = Modifier
+                                            .animateItemFastScroll()
+                                            .background(MaterialTheme.colorScheme.background)
+                                            .fillMaxWidth(),
+                                        language = model.language,
+                                        // SY -->
+                                        isCategory = model.isCategory,
+                                        // SY <--
+                                    )
+                                }
                             }
-                        }
-                        is SourceUiModel.Item -> {
-                            item(
-                                key = "source-${model.source.key()}",
-                                contentType = "item",
-                            ) {
-                                SourceItem(
-                                    modifier = Modifier.animateItemFastScroll(),
-                                    source = model.source,
-                                    // SY -->
-                                    showLatest = state.showLatest,
-                                    showPin = state.showPin,
-                                    // SY <--
-                                    onClickItem = onClickItem,
-                                    onLongClickItem = onLongClickItem,
-                                    onClickPin = onClickPin,
-                                )
+                            is SourceUiModel.Item -> {
+                                item(
+                                    key = "source-${model.source.key()}",
+                                    contentType = "item",
+                                ) {
+                                    SourceItem(
+                                        modifier = Modifier.animateItemFastScroll(),
+                                        source = model.source,
+                                        // SY -->
+                                        showLatest = state.showLatest,
+                                        showPin = state.showPin,
+                                        // SY <--
+                                        onClickItem = onClickItem,
+                                        onLongClickItem = onLongClickItem,
+                                        onClickPin = onClickPin,
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // KMK -->
-            AnimatedFloatingSearchBox(
-                listState = lazyListState,
-                searchQuery = state.searchQuery,
-                onChangeSearchQuery = onChangeSearchQuery,
-                placeholderText = stringResource(KMR.strings.action_search_for_source),
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(
-                        horizontal = MaterialTheme.padding.medium,
-                        vertical = MaterialTheme.padding.small,
-                    )
-                    .align(Alignment.TopCenter),
-                onGloballyPositioned = { layoutCoordinates ->
-                    searchBoxHeight = with(density) { layoutCoordinates.size.height.toDp() + 2 * MaterialTheme.padding.small }
-                },
-            )
-            // KMK <--
+                // KMK -->
+                AnimatedFloatingSearchBox(
+                    listState = lazyListState,
+                    searchQuery = state.searchQuery,
+                    onChangeSearchQuery = onChangeSearchQuery,
+                    placeholderText = stringResource(KMR.strings.action_search_for_source),
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(
+                            horizontal = MaterialTheme.padding.medium,
+                            vertical = MaterialTheme.padding.small,
+                        )
+                        .align(Alignment.TopCenter),
+                    onGloballyPositioned = { layoutCoordinates ->
+                        searchBoxHeight = with(density) { layoutCoordinates.size.height.toDp() + 2 * MaterialTheme.padding.small }
+                    },
+                )
+                // KMK <--
+            }
         }
     }
 }

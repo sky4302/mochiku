@@ -85,16 +85,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.14.24
-          name: Mochiku v1.14.24
+          tag_name: v1.14.25
+          name: Mochiku v1.14.25
           body: |
-            ### Mochiku (餅ク) v1.14.24 - Full-Bleed Backdrop Scrolling with Frosted Haze Blur
+            ### Mochiku (餅ク) v1.14.25 - Browse Full-Bleed Blur & Smart Update Action Polish
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.24:**
-            - **Full-Bleed Manga Backdrop Scrolling**: Colorful manga covers now render and scroll edge-to-edge behind, between, and around both floating capsules down to the bottom of the screen, eliminating the solid black box behind the dock.
-            - **Haze Backdrop Blur**: Applied real backdrop blur (`Haze`) with a diffused 24dp blur radius through the frosted translucent acrylic of both capsules, making manga cover artwork glow subtly as you scroll.
-            - **Edge-to-Edge List Clearance**: Provided floating dock clearance via `LocalBottomBarPadding` so the bottom row of manga cards is fully scrollable above the capsules without obstruction.
+            **What's New in v1.14.25:**
+            - **Browse Full-Bleed Scrolling & Haze Blur**: Updated Sources and Migrate tabs so source lists scroll edge-to-edge behind the frosted capsules with Haze backdrop blur while preserving full bottom scroll clearance.
+            - **Smart Update Action Visibility**: Hidden the Hourglass smart-update interval button on manga details when "Predict next release time" (or all Smart Update options) is disabled in Settings, keeping the action row synchronized on return.
             
             ---
             ### Download Links (Choose for your phone):
