@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,12 +39,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
@@ -90,6 +96,8 @@ fun MochikuProfileHeader(
     val displayChapters = recapData?.monthChaptersRead ?: 0
     val displayLibraryCount = recapData?.libraryCount ?: 0
 
+    val isDarkTheme = colorScheme.background.luminance() < 0.5f
+    val watermarkColor = colorScheme.onBackground.copy(alpha = if (isDarkTheme) 0.12f else 0.08f)
     val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
     val heroShape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
 
@@ -120,21 +128,16 @@ fun MochikuProfileHeader(
                     }
                 },
         ) {
-            Text(
-                text = "MOCHIKU",
-                fontSize = 84.sp,
-                fontWeight = FontWeight.Black,
-                fontFamily = FontFamily.Monospace,
-                color = colorScheme.onBackground.copy(alpha = 0.045f),
-                maxLines = 1,
-                softWrap = false,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .graphicsLayer {
-                        rotationZ = 90f
-                        translationX = 110f
-                    },
-            )
+            Box(modifier = Modifier.matchParentSize()) {
+                RightEdgeBrandWatermark(
+                    text = "MOCHIKU",
+                    color = watermarkColor,
+                    fontSize = 104.sp,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .offset(x = 26.dp),
+                )
+            }
 
             Column(
                 modifier = Modifier
@@ -314,7 +317,7 @@ fun MochikuProfileHeader(
         )
     }
 
-    // Fullscreen Story Recap Dialog (starts with centered auto-flip + scratch stage)
+    // Fullscreen Story Recap Dialog (starts with centered tap-to-flip + scratch stage)
     if (showStoryRecapDialog) {
         MochikuStoryRecapDialog(
             username = username,
@@ -329,4 +332,36 @@ fun MochikuProfileHeader(
             startWithCardVerify = true,
         )
     }
+}
+
+/** Vertical right-edge MOCHIKU watermark hugging the edge independently of screen DPI. */
+@Composable
+internal fun RightEdgeBrandWatermark(
+    text: String,
+    color: Color,
+    fontSize: TextUnit,
+    modifier: Modifier = Modifier,
+    letterSpacing: TextUnit = 6.sp,
+) {
+    Text(
+        text = text,
+        fontSize = fontSize,
+        fontWeight = FontWeight.Black,
+        fontFamily = FontFamily.Monospace,
+        letterSpacing = letterSpacing,
+        color = color,
+        maxLines = 1,
+        softWrap = false,
+        modifier = modifier
+            .layout { measurable, _ ->
+                val placeable = measurable.measure(Constraints())
+                layout(placeable.height, placeable.width) {
+                    placeable.place(
+                        x = (placeable.height - placeable.width) / 2,
+                        y = (placeable.width - placeable.height) / 2,
+                    )
+                }
+            }
+            .graphicsLayer { rotationZ = 90f },
+    )
 }

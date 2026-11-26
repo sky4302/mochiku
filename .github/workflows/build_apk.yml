@@ -85,16 +85,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.14.27
-          name: Mochiku v1.14.27
+          tag_name: v1.14.28
+          name: Mochiku v1.14.28
           body: |
-            ### Mochiku (餅ク) v1.14.27 - Pull-Down Hero Header & Auto-Flip Recap Card
+            ### Mochiku (餅ク) v1.14.28 - Tap-to-Flip ID Card, Paced Animations & Crisp Watermarks
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.27:**
-            - **Pull-Down Dotted Hero Header on More**: Wrapped the profile greeting, ID card, and clickable downward chevron in a rounded surface container with a monochrome dot-matrix pattern, subtle vertical `MOCHIKU` watermark, and damped top pull-down gesture (`76.dp` threshold with haptic confirmation).
-            - **Full-Screen Auto-Flip & Scratch Verification**: Tapping the `MochikuIdCard` (on More or Statistics), tapping the header chevron, or pulling down at the top of More launches a centered full-screen Story Recap entrance where the ID card scales in, pauses briefly, auto-flips 180deg to reveal the monochrome scratch foil, verifies the barcode (`VERIFIED`), and transitions into Slide 0.
-            - **Unified Entry Points**: Edit pencil icons continue to open profile editing directly, while the `Story Rewind` button in Statistics jumps straight to the recap slides.
+            **What's New in v1.14.28:**
+            - **Tap-to-Flip ID Card Stage**: Opening the full-screen recap card now rests centered on the front face until you tap the card (or `"Tap card to flip"`), letting you admire it before flipping smoothly into the scratch-off foil back.
+            - **Smoother, More Physical Motion**: Added a dialog backdrop fade-in, softened the pull-down release spring with a subtle beat, slowed the 3D card flip to `950ms` with a mid-flip lift, held `"VERIFIED"` longer before crossfading gracefully into Slide 0, and calmed slide transitions.
+            - **Crisp Right-Edge MOCHIKU Watermarks**: Fixed the hero header watermark alignment so the large vertical `MOCHIKU` word hugs the right edge instead of hiding behind the card, brought the same right-edge watermark into the card verify stage, and boosted contrast across both Dark Mode and Light Mode themes.
             
             ---
             ### Download Links (Choose for your phone):

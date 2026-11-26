@@ -3,6 +3,7 @@ package eu.kanade.presentation.more.profile
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -64,6 +66,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -86,6 +89,8 @@ import kotlinx.coroutines.launch
 import tachiyomi.domain.history.model.StampState
 import java.time.LocalDate
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.sin
 
 private const val TOTAL_RECAP_SLIDES = 8
 
@@ -134,33 +139,68 @@ fun MochikuStoryRecapDialog(
             decorFitsSystemWindows = false,
         ),
     ) {
+        var dialogVisible by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) { dialogVisible = true }
+        val dialogAlpha by animateFloatAsState(
+            targetValue = if (dialogVisible) 1f else 0f,
+            animationSpec = tween(durationMillis = 340, easing = FastOutSlowInEasing),
+            label = "recapDialogAlpha",
+        )
+
         val colorScheme = MaterialTheme.colorScheme
         val backgroundColor = colorScheme.background
         val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
         val onBackgroundColor = colorScheme.onBackground
+        val isDarkTheme = backgroundColor.luminance() < 0.5f
+        val rightWatermarkColor = onBackgroundColor.copy(alpha = if (isDarkTheme) 0.12f else 0.08f)
+        val marqueeWatermarkColor = onBackgroundColor.copy(alpha = if (isDarkTheme) 0.11f else 0.075f)
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer { alpha = dialogAlpha }
                 .background(backgroundColor)
                 .clipToBounds(),
         ) {
             val data = recapData
 
-            // Low-opacity scrolling watermark marquee behind the cached dot matrix
-            val watermarkLabel = if (!isCardVerified || data == null) {
-                "MOCHIKU"
-            } else {
-                when (currentSlide) {
-                    1 -> data.monthName.uppercase(Locale.ENGLISH)
-                    2 -> (data.favoriteWeekday ?: data.monthName).uppercase(Locale.ENGLISH)
-                    else -> "MOCHIKU"
+            // Watermark layer: giant vertical right-edge MOCHIKU on card verify, marquee during slides
+            AnimatedContent(
+                targetState = isCardVerified,
+                transitionSpec = {
+                    fadeIn(tween(450, easing = FastOutSlowInEasing))
+                        .togetherWith(fadeOut(tween(320, easing = FastOutSlowInEasing)))
+                },
+                label = "watermarkStage",
+            ) { verified ->
+                if (!verified) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        RightEdgeBrandWatermark(
+                            text = "MOCHIKU",
+                            color = rightWatermarkColor,
+                            fontSize = 148.sp,
+                            letterSpacing = 8.sp,
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .offset(x = 34.dp),
+                        )
+                    }
+                } else {
+                    val watermarkLabel = if (data == null) {
+                        "MOCHIKU"
+                    } else {
+                        when (currentSlide) {
+                            1 -> data.monthName.uppercase(Locale.ENGLISH)
+                            2 -> (data.favoriteWeekday ?: data.monthName).uppercase(Locale.ENGLISH)
+                            else -> "MOCHIKU"
+                        }
+                    }
+                    RecapWatermarkMarquee(
+                        text = watermarkLabel,
+                        color = marqueeWatermarkColor,
+                    )
                 }
             }
-            RecapWatermarkMarquee(
-                text = watermarkLabel,
-                color = onBackgroundColor.copy(alpha = 0.045f),
-            )
 
             // Cached Mochy-style dot-matrix texture
             Spacer(
@@ -183,229 +223,267 @@ fun MochikuStoryRecapDialog(
                     },
             )
 
-            if (!isCardVerified) {
-                // Stage 0/1: Centered Front Card -> Auto-Flip 180deg -> Scratch Foil -> Laser Verify
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.systemBars)
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = colorScheme.surfaceContainer,
-                        modifier = Modifier.size(30.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Image(
-                                painter = painterResource(R.drawable.komikku),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(CircleShape),
+            val stageKey = when {
+                !isCardVerified -> 0
+                data == null -> 1
+                else -> 2
+            }
+
+            AnimatedContent(
+                targetState = stageKey,
+                transitionSpec = {
+                    (
+                        fadeIn(tween(450, easing = FastOutSlowInEasing)) +
+                            scaleIn(
+                                initialScale = 0.96f,
+                                animationSpec = tween(450, easing = FastOutSlowInEasing),
                             )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Close",
-                            tint = onBackgroundColor,
                         )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.systemBars)
-                        .padding(horizontal = 24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    RecapCardVerifyStage(
-                        username = username,
-                        photoPath = photoPath,
-                        cardNumber = cardNumber,
-                        joinedDate = joinedDate,
-                        recentStamps = recentStamps,
-                        onVerified = { isCardVerified = true },
-                    )
-                }
-            } else if (data == null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        CircularProgressIndicator(color = colorScheme.primary, modifier = Modifier.size(36.dp))
-                        Text(
-                            text = "Analyzing reading history...",
-                            color = onBackgroundColor.copy(alpha = 0.7f),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp,
-                        )
-                    }
-                }
-            } else {
-                // Tap Navigation Overlay (Left 30% = Prev, Right 70% = Next)
-                Row(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) { rewindSlide() },
-                    )
-                    Box(
-                        modifier = Modifier
-                            .weight(2f)
-                            .fillMaxHeight()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) { advanceSlide() },
-                    )
-                }
-
-                // Top Chrome: Hairline Monochrome Progress + Docked Avatar + Title
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.systemBars)
-                        .padding(top = 12.dp, start = 16.dp, end = 16.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        for (i in 0 until TOTAL_RECAP_SLIDES) {
-                            Box(
+                        .togetherWith(fadeOut(tween(320, easing = FastOutSlowInEasing)))
+                },
+                label = "recapStageTransition",
+            ) { targetStage ->
+                when (targetStage) {
+                    0 -> {
+                        // Stage 0/1: Centered Front Card -> Tap to Flip 180deg -> Scratch Foil -> Laser Verify
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .height(2.dp)
-                                    .clip(RoundedCornerShape(1.dp))
-                                    .background(
-                                        if (i <= currentSlide) {
-                                            onBackgroundColor.copy(alpha = 0.85f)
-                                        } else {
-                                            colorScheme.outlineVariant.copy(alpha = 0.32f)
-                                        },
-                                    ),
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            AnimatedVisibility(
-                                visible = currentSlide > 0,
-                                enter = fadeIn(tween(260)) + scaleIn(initialScale = 0.75f, animationSpec = tween(260)),
-                                exit = fadeOut(tween(180)),
+                                    .fillMaxWidth()
+                                    .windowInsetsPadding(WindowInsets.systemBars)
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                StoryAvatar(photoPath = photoPath, size = 30)
-                            }
+                                Surface(
+                                    shape = CircleShape,
+                                    color = colorScheme.surfaceContainer,
+                                    modifier = Modifier.size(30.dp),
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Image(
+                                            painter = painterResource(R.drawable.komikku),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .clip(CircleShape),
+                                        )
+                                    }
+                                }
 
-                            Surface(
-                                shape = CircleShape,
-                                color = colorScheme.surfaceContainer,
-                                modifier = Modifier.size(24.dp),
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Image(
-                                        painter = painterResource(R.drawable.komikku),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .clip(CircleShape),
+                                IconButton(
+                                    onClick = onDismissRequest,
+                                    modifier = Modifier.size(36.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Close,
+                                        contentDescription = "Close",
+                                        tint = onBackgroundColor,
                                     )
                                 }
                             }
-                            Text(
-                                text = "Mochiku Recap · ${data.monthName} ${data.year}",
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold,
-                                color = onBackgroundColor.copy(alpha = 0.85f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
 
-                        IconButton(
-                            onClick = onDismissRequest,
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Close,
-                                contentDescription = "Close",
-                                tint = onBackgroundColor,
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .windowInsetsPadding(WindowInsets.systemBars)
+                                    .padding(horizontal = 24.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                RecapCardVerifyStage(
+                                    username = username,
+                                    photoPath = photoPath,
+                                    cardNumber = cardNumber,
+                                    joinedDate = joinedDate,
+                                    recentStamps = recentStamps,
+                                    onVerified = { isCardVerified = true },
+                                )
+                            }
                         }
                     }
-                }
 
-                // Scene Content with Video-Reel Crossfade & Scale Cuts
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.systemBars)
-                        .padding(horizontal = 24.dp, vertical = 72.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AnimatedContent(
-                        targetState = currentSlide,
-                        transitionSpec = {
-                            (
-                                fadeIn(tween(320, easing = FastOutSlowInEasing)) +
-                                    scaleIn(
-                                        initialScale = 0.96f,
-                                        animationSpec = tween(320, easing = FastOutSlowInEasing),
-                                    )
+                    1 -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                CircularProgressIndicator(color = colorScheme.primary, modifier = Modifier.size(36.dp))
+                                Text(
+                                    text = "Analyzing reading history...",
+                                    color = onBackgroundColor.copy(alpha = 0.7f),
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.sp,
                                 )
-                                .togetherWith(fadeOut(tween(220, easing = FastOutSlowInEasing)))
-                        },
-                        label = "recapSceneTransition",
-                    ) { targetSlide ->
-                        when (targetSlide) {
-                            0 -> SlideJourney(username, photoPath, joinedDate, data.allTimeDurationMs)
-                            1 -> SlideMonthProgress(data.monthName, data.monthChaptersRead)
-                            2 -> SlideFavoriteWeekday(data)
-                            3 -> RecapRouletteSlide(data)
-                            4 -> RecapCoverGridSlide(data)
-                            5 -> SlideMilestoneChapters(data)
-                            6 -> RecapThermalReceiptSlide(
-                                username = username,
-                                cardNumber = cardNumber,
-                                data = data,
-                                onContinue = ::advanceSlide,
-                            )
-                            7 -> SlideConclusion(
-                                username = username,
-                                cardNumber = cardNumber,
-                                joinedDate = joinedDate,
-                                monthName = data.monthName,
-                                photoPath = photoPath,
-                                recentStamps = recentStamps,
-                                onFinish = onDismissRequest,
-                            )
+                            }
+                        }
+                    }
+
+                    else -> {
+                        val loadedData = data ?: return@AnimatedContent
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // Tap Navigation Overlay (Left 30% = Prev, Right 70% = Next)
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) { rewindSlide() },
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .weight(2f)
+                                        .fillMaxHeight()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) { advanceSlide() },
+                                )
+                            }
+
+                            // Top Chrome: Hairline Monochrome Progress + Docked Avatar + Title
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .windowInsetsPadding(WindowInsets.systemBars)
+                                    .padding(top = 12.dp, start = 16.dp, end = 16.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    for (i in 0 until TOTAL_RECAP_SLIDES) {
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(2.dp)
+                                                .clip(RoundedCornerShape(1.dp))
+                                                .background(
+                                                    if (i <= currentSlide) {
+                                                        onBackgroundColor.copy(alpha = 0.85f)
+                                                    } else {
+                                                        colorScheme.outlineVariant.copy(alpha = 0.32f)
+                                                    },
+                                                ),
+                                        )
+                                    }
+                                }
+
+                                Spacer(Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f),
+                                    ) {
+                                        AnimatedVisibility(
+                                            visible = currentSlide > 0,
+                                            enter = fadeIn(tween(260)) +
+                                                scaleIn(initialScale = 0.75f, animationSpec = tween(260)),
+                                            exit = fadeOut(tween(180)),
+                                        ) {
+                                            StoryAvatar(photoPath = photoPath, size = 30)
+                                        }
+
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = colorScheme.surfaceContainer,
+                                            modifier = Modifier.size(24.dp),
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Image(
+                                                    painter = painterResource(R.drawable.komikku),
+                                                    contentDescription = null,
+                                                    modifier = Modifier
+                                                        .size(16.dp)
+                                                        .clip(CircleShape),
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = "Mochiku Recap · ${loadedData.monthName} ${loadedData.year}",
+                                            fontSize = 12.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold,
+                                            color = onBackgroundColor.copy(alpha = 0.85f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = onDismissRequest,
+                                        modifier = Modifier.size(36.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Close,
+                                            contentDescription = "Close",
+                                            tint = onBackgroundColor,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Scene Content with Video-Reel Crossfade & Scale Cuts
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .windowInsetsPadding(WindowInsets.systemBars)
+                                    .padding(horizontal = 24.dp, vertical = 72.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                AnimatedContent(
+                                    targetState = currentSlide,
+                                    transitionSpec = {
+                                        (
+                                            fadeIn(tween(450, easing = FastOutSlowInEasing)) +
+                                                scaleIn(
+                                                    initialScale = 0.96f,
+                                                    animationSpec = tween(450, easing = FastOutSlowInEasing),
+                                                )
+                                            )
+                                            .togetherWith(fadeOut(tween(280, easing = FastOutSlowInEasing)))
+                                    },
+                                    label = "recapSceneTransition",
+                                ) { targetSlide ->
+                                    when (targetSlide) {
+                                        0 -> SlideJourney(
+                                            username,
+                                            photoPath,
+                                            joinedDate,
+                                            loadedData.allTimeDurationMs,
+                                        )
+                                        1 -> SlideMonthProgress(loadedData.monthName, loadedData.monthChaptersRead)
+                                        2 -> SlideFavoriteWeekday(loadedData)
+                                        3 -> RecapRouletteSlide(loadedData)
+                                        4 -> RecapCoverGridSlide(loadedData)
+                                        5 -> SlideMilestoneChapters(loadedData)
+                                        6 -> RecapThermalReceiptSlide(
+                                            username = username,
+                                            cardNumber = cardNumber,
+                                            data = loadedData,
+                                            onContinue = ::advanceSlide,
+                                        )
+                                        7 -> SlideConclusion(
+                                            username = username,
+                                            cardNumber = cardNumber,
+                                            joinedDate = joinedDate,
+                                            monthName = loadedData.monthName,
+                                            photoPath = photoPath,
+                                            recentStamps = recentStamps,
+                                            onFinish = onDismissRequest,
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -415,8 +493,8 @@ fun MochikuStoryRecapDialog(
 }
 
 /**
- * Full-screen Stage 0/1: centers the front ID card, auto-flips 180deg in 3D, presents the
- * monochrome scratch foil + "scratch!" cue, and runs laser verification into Slide 1.
+ * Full-screen Stage 0/1: centers the front ID card, waits for user tap to flip 180deg in 3D,
+ * presents the monochrome scratch foil + "scratch!" cue, and runs laser verification into Slide 1.
  */
 @Composable
 private fun RecapCardVerifyStage(
@@ -436,19 +514,38 @@ private fun RecapCardVerifyStage(
     val cardRotation = remember { Animatable(0f) }
     val laserProgress = remember { Animatable(0f) }
 
-    var autoFlipDone by remember { mutableStateOf(false) }
+    var isFlipped by remember { mutableStateOf(false) }
+    var isFlipSettled by remember { mutableStateOf(false) }
     var isScratchedDone by remember { mutableStateOf(false) }
     var showSkipCue by remember { mutableStateOf(false) }
     var isScanning by remember { mutableStateOf(false) }
     var isVerified by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        entryScale.animateTo(1f, tween(durationMillis = 240, easing = FastOutSlowInEasing))
-        delay(220)
-        cardRotation.animateTo(180f, tween(durationMillis = 600, easing = FastOutSlowInEasing))
-        autoFlipDone = true
-        delay(1500)
-        showSkipCue = true
+        entryScale.animateTo(
+            1f,
+            tween(durationMillis = 480, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)),
+        )
+    }
+
+    LaunchedEffect(isFlipSettled) {
+        if (isFlipSettled) {
+            delay(1500)
+            showSkipCue = true
+        }
+    }
+
+    fun flipCard() {
+        if (isFlipped) return
+        isFlipped = true
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        scope.launch {
+            cardRotation.animateTo(
+                180f,
+                tween(durationMillis = 950, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)),
+            )
+            isFlipSettled = true
+        }
     }
 
     fun triggerVerifySweep() {
@@ -457,10 +554,10 @@ private fun RecapCardVerifyStage(
         isScanning = true
         scope.launch {
             laserProgress.snapTo(0f)
-            laserProgress.animateTo(1f, tween(durationMillis = 950, easing = FastOutSlowInEasing))
+            laserProgress.animateTo(1f, tween(durationMillis = 1050, easing = FastOutSlowInEasing))
             isVerified = true
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            delay(480)
+            delay(750)
             isScanning = false
             onVerified()
         }
@@ -468,9 +565,12 @@ private fun RecapCardVerifyStage(
 
     val foilAlpha by animateFloatAsState(
         targetValue = if (isScratchedDone) 0f else 1f,
-        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
         label = "verifyFoilAlpha",
     )
+
+    val flipProgress = (cardRotation.value / 180f).coerceIn(0f, 1f)
+    val midFlipLift = 1f + sin(flipProgress * PI).toFloat() * 0.05f
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -482,14 +582,20 @@ private fun RecapCardVerifyStage(
                 .fillMaxWidth()
                 .aspectRatio(ID_CARD_ASPECT)
                 .graphicsLayer {
-                    scaleX = entryScale.value
-                    scaleY = entryScale.value
+                    scaleX = entryScale.value * midFlipLift
+                    scaleY = entryScale.value * midFlipLift
                     rotationY = cardRotation.value
                     cameraDistance = 14f * density.density
                 }
                 .clip(RoundedCornerShape(22.dp))
                 .background(colorScheme.surfaceContainerHigh)
-                .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(22.dp)),
+                .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(22.dp))
+                .clickable(
+                    enabled = !isFlipped,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = ::flipCard,
+                ),
         ) {
             if (cardRotation.value <= 90f) {
                 MochikuIdCardFrontContent(
@@ -523,7 +629,7 @@ private fun RecapCardVerifyStage(
                                 ScratchOffFoilOverlay(
                                     sessionKey = 0,
                                     alpha = foilAlpha,
-                                    enabled = autoFlipDone && !isScratchedDone && !isScanning && !isVerified,
+                                    enabled = isFlipSettled && !isScratchedDone && !isScanning && !isVerified,
                                     onScratchComplete = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         triggerVerifySweep()
@@ -536,38 +642,64 @@ private fun RecapCardVerifyStage(
             }
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        val promptStage = when {
+            !isFlipped -> 0
+            isFlipSettled && !isScratchedDone && !isScanning && !isVerified -> 1
+            else -> 2
+        }
+
+        Box(
             modifier = Modifier.height(52.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            AnimatedVisibility(
-                visible = autoFlipDone && !isScratchedDone && !isScanning && !isVerified,
-                enter = fadeIn(tween(240)),
-                exit = fadeOut(tween(180)),
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = "scratch!",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Black,
-                        color = colorScheme.onBackground,
-                    )
-                    if (showSkipCue) {
+            AnimatedContent(
+                targetState = promptStage,
+                transitionSpec = {
+                    fadeIn(tween(300, easing = FastOutSlowInEasing))
+                        .togetherWith(fadeOut(tween(180, easing = FastOutSlowInEasing)))
+                },
+                contentAlignment = Alignment.Center,
+                label = "cardPromptStage",
+            ) { stage ->
+                when (stage) {
+                    0 -> {
                         Text(
-                            text = "TAP TO SKIP",
-                            fontSize = 11.sp,
+                            text = "Tap card to flip",
+                            fontSize = 14.sp,
                             fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.onBackground.copy(alpha = 0.55f),
+                            fontWeight = FontWeight.SemiBold,
+                            color = colorScheme.onBackground.copy(alpha = 0.72f),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
-                                .clickable(onClick = ::triggerVerifySweep)
-                                .padding(horizontal = 12.dp, vertical = 2.dp),
+                                .clickable(onClick = ::flipCard)
+                                .padding(horizontal = 14.dp, vertical = 4.dp),
                         )
+                    }
+                    1 -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = "scratch!",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = colorScheme.onBackground,
+                            )
+                            if (showSkipCue) {
+                                Text(
+                                    text = "TAP TO SKIP",
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorScheme.onBackground.copy(alpha = 0.55f),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .clickable(onClick = ::triggerVerifySweep)
+                                        .padding(horizontal = 12.dp, vertical = 2.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -622,7 +754,7 @@ private fun RecapWatermarkMarquee(
 @Composable
 internal fun PptxBuildIn(
     index: Int,
-    stepDelayMs: Int = 140,
+    stepDelayMs: Int = 170,
     content: @Composable () -> Unit,
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -632,12 +764,12 @@ internal fun PptxBuildIn(
     }
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 520, easing = FastOutSlowInEasing),
         label = "pptxAlpha",
     )
     val offsetY by animateDpAsState(
         targetValue = if (visible) 0.dp else 26.dp,
-        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 520, easing = FastOutSlowInEasing),
         label = "pptxOffset",
     )
     Box(

@@ -67,6 +67,7 @@ import exh.pref.DelegateSourcePreferences
 import exh.source.ExhPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.Constants
 import tachiyomi.domain.history.model.StampState
@@ -155,8 +156,13 @@ fun MoreScreen(
                     val shouldLaunch = pullOffsetPx.value >= pullThresholdPx
                     armedHapticFired = false
                     scope.launch {
-                        if (shouldLaunch) pullLaunchNonce++
-                        pullOffsetPx.animateTo(0f, spring(dampingRatio = 0.78f, stiffness = 420f))
+                        if (shouldLaunch) {
+                            launch {
+                                delay(90)
+                                pullLaunchNonce++
+                            }
+                        }
+                        pullOffsetPx.animateTo(0f, spring(dampingRatio = 0.86f, stiffness = 260f))
                     }
                     return available
                 }
