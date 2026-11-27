@@ -62,8 +62,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -149,8 +147,8 @@ fun MochikuStoryRecapDialog(
 
         val colorScheme = MaterialTheme.colorScheme
         val backgroundColor = colorScheme.background
-        val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
         val onBackgroundColor = colorScheme.onBackground
+        val dotColor = mochikuDotColor(surfaceColor = backgroundColor, onBackgroundColor = onBackgroundColor)
         val isDarkTheme = backgroundColor.luminance() < 0.5f
         val rightWatermarkColor = onBackgroundColor.copy(alpha = if (isDarkTheme) 0.12f else 0.08f)
         val marqueeWatermarkColor = onBackgroundColor.copy(alpha = if (isDarkTheme) 0.11f else 0.075f)
@@ -206,21 +204,12 @@ fun MochikuStoryRecapDialog(
             Spacer(
                 modifier = Modifier
                     .fillMaxSize()
-                    .drawWithCache {
-                        val spacing = 28.dp.toPx()
-                        val radius = 1.2.dp.toPx()
-                        onDrawBehind {
-                            var x = 0f
-                            while (x < size.width) {
-                                var y = 0f
-                                while (y < size.height) {
-                                    drawCircle(dotColor, radius = radius, center = Offset(x, y))
-                                    y += spacing
-                                }
-                                x += spacing
-                            }
-                        }
-                    },
+                    .mochikuDotMatrix(
+                        dotColor = dotColor,
+                        spacing = 28.dp,
+                        radius = 1.3.dp,
+                        centerStartOffset = false,
+                    ),
             )
 
             val stageKey = when {

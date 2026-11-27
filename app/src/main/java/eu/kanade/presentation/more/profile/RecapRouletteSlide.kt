@@ -54,6 +54,18 @@ import kotlinx.coroutines.launch
 
 private const val ROULETTE_SLOT_COUNT = 12
 
+/** Builds the roulette cover strip with #1 reserved for landing slot 0 when multiple series exist. */
+internal fun buildRouletteSlots(
+    data: MochikuRecapData,
+    slotCount: Int = ROULETTE_SLOT_COUNT,
+): List<MochikuMangaStat> {
+    val hero = data.topMangaList.firstOrNull() ?: return emptyList()
+    val runners = data.topMangaList.drop(1).ifEmpty { listOf(hero) }
+    return List(slotCount) { idx ->
+        if (idx == 0) hero else runners[(idx - 1) % runners.size]
+    }
+}
+
 /**
  * Decelerating circular cover roulette that locks onto the user's #1 series with ripple rings.
  */
@@ -104,14 +116,7 @@ internal fun RecapRouletteSlide(data: MochikuRecapData) {
     )
 
     val roulettePool = remember(data.topMangaList) {
-        if (data.topMangaList.isEmpty()) {
-            emptyList()
-        } else {
-            List(ROULETTE_SLOT_COUNT) { idx ->
-                // Index 0 lands centered at spinProgress = 1f
-                if (idx == 0) data.topMangaList.first() else data.topMangaList[idx % data.topMangaList.size]
-            }
-        }
+        buildRouletteSlots(data)
     }
 
     Column(

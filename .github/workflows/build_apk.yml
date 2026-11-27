@@ -85,16 +85,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.14.28
-          name: Mochiku v1.14.28
+          tag_name: v1.14.29
+          name: Mochiku v1.14.29
           body: |
-            ### Mochiku (餅ク) v1.14.28 - Tap-to-Flip ID Card, Paced Animations & Crisp Watermarks
+            ### Mochiku (餅ク) v1.14.29 - Crisp Dark Mode Dot Matrix, Full Cover Grid & Clean Roulette
             Mochiku is an honest open-source community fork of [Komikku](https://github.com/komikku-app/komikku) (built upon Tachiyomi and Mihon).
             
-            **What's New in v1.14.28:**
-            - **Tap-to-Flip ID Card Stage**: Opening the full-screen recap card now rests centered on the front face until you tap the card (or `"Tap card to flip"`), letting you admire it before flipping smoothly into the scratch-off foil back.
-            - **Smoother, More Physical Motion**: Added a dialog backdrop fade-in, softened the pull-down release spring with a subtle beat, slowed the 3D card flip to `950ms` with a mid-flip lift, held `"VERIFIED"` longer before crossfading gracefully into Slide 0, and calmed slide transitions.
-            - **Crisp Right-Edge MOCHIKU Watermarks**: Fixed the hero header watermark alignment so the large vertical `MOCHIKU` word hugs the right edge instead of hiding behind the card, brought the same right-edge watermark into the card verify stage, and boosted contrast across both Dark Mode and Light Mode themes.
+            **What's New in v1.14.29:**
+            - **Dark Mode Dot-Matrix Contrast**: Replaced the dim `outlineVariant` dot alpha with a shared luminance-aware `mochikuDotColor` / `mochikuDotMatrix` backdrop helper across the More hero header, Story Recap overlay, and 9:16 Share Cards so dots remain visible in OLED Dark and Light themes.
+            - **Full 12-Tile Cover Grid**: Removed the blank right-column placeholder slots in `RecapCoverGridSlide` so all 12 tilted tiles display real covers while keeping `#1` exclusive to the centered spotlight tile.
+            - **Deduplicated Roulette Spin**: Reserved `#1` strictly for landing slot `0` when multiple series were read this month, eliminating the mid-spin `#1` duplicate flash.
             
             ---
             ### Download Links (Choose for your phone):

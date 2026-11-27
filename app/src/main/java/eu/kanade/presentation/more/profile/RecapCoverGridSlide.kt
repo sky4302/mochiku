@@ -53,7 +53,20 @@ import kotlinx.coroutines.launch
 private const val GRID_COLS = 3
 private const val GRID_ROWS = 4
 private const val HERO_TILE_INDEX = 4 // Center tile (row 1, col 1)
-private const val MAX_UNIQUE_GRID_COVERS = 8
+
+/** Builds all 12 tiles for the tilted cover grid with hero #1 reserved for [HERO_TILE_INDEX]. */
+internal fun buildCoverGridTiles(data: MochikuRecapData): List<MochikuMangaStat> {
+    val hero = data.heroManga ?: return emptyList()
+    val surroundPool = data.topMangaList.drop(1).ifEmpty { listOf(hero) }
+    var surroundCursor = 0
+    return List(GRID_COLS * GRID_ROWS) { tileIdx ->
+        if (tileIdx == HERO_TILE_INDEX) {
+            hero
+        } else {
+            surroundPool[surroundCursor++ % surroundPool.size]
+        }
+    }
+}
 
 /**
  * -28deg panning masonry cover grid that fades surrounding tiles and un-rotates the #1 cover
@@ -90,8 +103,8 @@ internal fun RecapCoverGridSlide(data: MochikuRecapData) {
         spotlightReady = true
     }
 
-    val distinctCovers = remember(data.topMangaList) {
-        data.topMangaList.take(MAX_UNIQUE_GRID_COVERS)
+    val gridTiles = remember(data.topMangaList, hero?.mangaId) {
+        buildCoverGridTiles(data)
     }
 
     if (hero == null) {
@@ -187,14 +200,7 @@ internal fun RecapCoverGridSlide(data: MochikuRecapData) {
                         for (col in 0 until GRID_COLS) {
                             val tileIdx = row * GRID_COLS + col
                             val isHeroTile = tileIdx == HERO_TILE_INDEX
-                            val isPlaceholder = !isHeroTile && (distinctCovers.isEmpty() || tileIdx % 3 == 2)
-                            val tileStat = if (isHeroTile) {
-                                hero
-                            } else if (!isPlaceholder && distinctCovers.isNotEmpty()) {
-                                distinctCovers[tileIdx % distinctCovers.size]
-                            } else {
-                                null
-                            }
+                            val tileStat = gridTiles.getOrNull(tileIdx)
 
                             Box(
                                 modifier = Modifier

@@ -29,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -43,6 +42,8 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.more.profile.ID_CARD_ASPECT
 import eu.kanade.presentation.more.profile.MochikuIdCardBackContent
 import eu.kanade.presentation.more.profile.MochikuIdCardFrontContent
+import eu.kanade.presentation.more.profile.mochikuDotColor
+import eu.kanade.presentation.more.profile.mochikuDotMatrix
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import tachiyomi.domain.history.model.PassportStamp
 import tachiyomi.domain.history.model.StampState
@@ -323,7 +324,7 @@ private fun StoryCardShell(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val backgroundColor = colorScheme.background
-    val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val dotColor = mochikuDotColor(surfaceColor = backgroundColor, onBackgroundColor = colorScheme.onBackground)
     val labelColor = colorScheme.onSurfaceVariant
 
     Column(
@@ -331,19 +332,7 @@ private fun StoryCardShell(
             .fillMaxWidth()
             .aspectRatio(9f / 16f)
             .background(backgroundColor)
-            .drawBehind {
-                val spacing = 28.dp.toPx()
-                val radius = 1.2.dp.toPx()
-                var x = spacing / 2f
-                while (x < size.width) {
-                    var y = spacing / 2f
-                    while (y < size.height) {
-                        drawCircle(dotColor, radius = radius, center = Offset(x, y))
-                        y += spacing
-                    }
-                    x += spacing
-                }
-            }
+            .mochikuDotMatrix(dotColor = dotColor, spacing = 28.dp, radius = 1.3.dp)
             .padding(horizontal = 20.dp, vertical = 26.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

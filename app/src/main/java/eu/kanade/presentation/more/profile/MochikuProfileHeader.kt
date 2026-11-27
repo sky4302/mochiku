@@ -98,7 +98,10 @@ fun MochikuProfileHeader(
 
     val isDarkTheme = colorScheme.background.luminance() < 0.5f
     val watermarkColor = colorScheme.onBackground.copy(alpha = if (isDarkTheme) 0.12f else 0.08f)
-    val dotColor = colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val dotColor = mochikuDotColor(
+        surfaceColor = colorScheme.surfaceContainerLow,
+        onBackgroundColor = colorScheme.onBackground,
+    )
     val heroShape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
 
     Column(
@@ -112,21 +115,7 @@ fun MochikuProfileHeader(
                 .clip(heroShape)
                 .background(colorScheme.surfaceContainerLow)
                 .clipToBounds()
-                .drawWithCache {
-                    val spacing = 24.dp.toPx()
-                    val radius = 1.1.dp.toPx()
-                    onDrawBehind {
-                        var x = spacing / 2f
-                        while (x < size.width) {
-                            var y = spacing / 2f
-                            while (y < size.height) {
-                                drawCircle(dotColor, radius = radius, center = Offset(x, y))
-                                y += spacing
-                            }
-                            x += spacing
-                        }
-                    }
-                },
+                .mochikuDotMatrix(dotColor = dotColor, spacing = 24.dp, radius = 1.2.dp),
         ) {
             Box(modifier = Modifier.matchParentSize()) {
                 RightEdgeBrandWatermark(
@@ -364,4 +353,36 @@ internal fun RightEdgeBrandWatermark(
             }
             .graphicsLayer { rotationZ = 90f },
     )
+}
+
+/** Luminance-aware dot color so the background matrix remains crisp in OLED dark and light themes. */
+internal fun mochikuDotColor(
+    surfaceColor: Color,
+    onBackgroundColor: Color,
+): Color {
+    val alpha = if (surfaceColor.luminance() < 0.5f) 0.14f else 0.10f
+    return onBackgroundColor.copy(alpha = alpha)
+}
+
+/** Cached dot-matrix backdrop modifier shared across profile hero, story recap, and share cards. */
+internal fun Modifier.mochikuDotMatrix(
+    dotColor: Color,
+    spacing: Dp,
+    radius: Dp,
+    centerStartOffset: Boolean = true,
+): Modifier = drawWithCache {
+    val spacingPx = spacing.toPx()
+    val radiusPx = radius.toPx()
+    val startOffset = if (centerStartOffset) spacingPx / 2f else 0f
+    onDrawBehind {
+        var x = startOffset
+        while (x < size.width) {
+            var y = startOffset
+            while (y < size.height) {
+                drawCircle(dotColor, radius = radiusPx, center = Offset(x, y))
+                y += spacingPx
+            }
+            x += spacingPx
+        }
+    }
 }

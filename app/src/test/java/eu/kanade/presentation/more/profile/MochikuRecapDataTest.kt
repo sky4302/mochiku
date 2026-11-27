@@ -134,5 +134,56 @@ class MochikuRecapDataTest {
         recap.topAuthor shouldBe null
         recap.favoriteWeekday shouldBe null
         recap.percentMoreThanSecondDay shouldBe null
+        buildCoverGridTiles(recap) shouldHaveSize 0
+        buildRouletteSlots(recap) shouldHaveSize 0
+    }
+
+    @Test
+    fun `cover grid fills all 12 tiles and keeps hero exclusive when multiple series exist`() {
+        val satMs = epochMs(2026, 11, 14, 15)
+        val entries = (1L..10L).flatMap { id ->
+            val count = (11 - id).toInt()
+            List(count) { entry(id, "Series $id", "Author $id", satMs, 10L) }
+        }
+        val recap = computeMonthlyRecap(
+            monthEntries = entries,
+            libraryMangaList = emptyList(),
+            allTimeDurationMs = 0L,
+            now = LocalDate.of(2026, 11, 20),
+            zoneId = utc,
+            coverProvider = { null },
+        )
+
+        val gridTiles = buildCoverGridTiles(recap)
+        gridTiles shouldHaveSize 12
+        gridTiles[4].mangaId shouldBe 1L
+        gridTiles.filterIndexed { index, _ -> index != 4 }.none { it.mangaId == 1L } shouldBe true
+
+        val rouletteSlots = buildRouletteSlots(recap)
+        rouletteSlots shouldHaveSize 12
+        rouletteSlots[0].mangaId shouldBe 1L
+        rouletteSlots.drop(1).none { it.mangaId == 1L } shouldBe true
+    }
+
+    @Test
+    fun `cover grid and roulette fall back cleanly when only one series was read`() {
+        val satMs = epochMs(2026, 11, 14, 15)
+        val entries = listOf(entry(9L, "Solo Series", "Solo Author", satMs, 25L))
+        val recap = computeMonthlyRecap(
+            monthEntries = entries,
+            libraryMangaList = emptyList(),
+            allTimeDurationMs = 0L,
+            now = LocalDate.of(2026, 11, 20),
+            zoneId = utc,
+            coverProvider = { null },
+        )
+
+        val gridTiles = buildCoverGridTiles(recap)
+        gridTiles shouldHaveSize 12
+        gridTiles.all { it.mangaId == 9L } shouldBe true
+
+        val rouletteSlots = buildRouletteSlots(recap)
+        rouletteSlots shouldHaveSize 12
+        rouletteSlots.all { it.mangaId == 9L } shouldBe true
     }
 }
