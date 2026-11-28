@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.download
 
 import android.annotation.SuppressLint
 import android.view.View
+import androidx.core.graphics.ColorUtils
 import androidx.recyclerview.widget.ItemTouchHelper
 import eu.davidea.flexibleadapter.FlexibleAdapter
 import eu.davidea.viewholders.ExpandableViewHolder
@@ -14,6 +15,10 @@ class DownloadHeaderHolder(view: View, adapter: FlexibleAdapter<*>) : Expandable
     @SuppressLint("SetTextI18n")
     fun bind(item: DownloadHeaderItem) {
         setDragHandleView(binding.reorder)
+        val colorScheme = (mAdapter as DownloadAdapter).colorScheme
+        binding.container.setCardBackgroundColor(colorScheme.surfaceContainerHigh)
+        binding.container.strokeColor = ColorUtils.setAlphaComponent(colorScheme.outlineVariant, 115)
+        binding.title.setTextColor(colorScheme.onSurface)
         binding.title.text = "${item.name} (${item.size})"
     }
 

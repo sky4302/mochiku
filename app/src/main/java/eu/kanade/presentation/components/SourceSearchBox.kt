@@ -3,11 +3,12 @@ package eu.kanade.presentation.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -115,6 +116,11 @@ fun SourcesSearchBox(
         modifier = modifier
             .onGloballyPositioned(onGloballyPositioned)
             .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                shape = CircleShape,
+            )
             .focusRequester(focusRequester)
             .onFocusChanged { isFocused = it.isFocused }
             .runOnEnterKeyPressed(action = searchAndClearFocus)
@@ -156,8 +162,10 @@ fun SourcesSearchBox(
                         onClickClearSearch = onClickClearSearch,
                     )
                 },
-                shape = RoundedCornerShape(24.dp),
+                shape = CircleShape,
                 colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     errorIndicatorColor = Color.Transparent,

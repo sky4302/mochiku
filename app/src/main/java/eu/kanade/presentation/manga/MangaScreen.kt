@@ -19,9 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -59,6 +60,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
@@ -67,7 +69,10 @@ import dev.chrisbanes.haze.hazeSource
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.RelatedMangaTitle
+import eu.kanade.presentation.components.GroupCardPosition
+import eu.kanade.presentation.components.mochikuGroupedCardContainer
 import eu.kanade.presentation.components.relativeDateText
+import eu.kanade.presentation.components.resolveSectionCardPositions
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.ChapterHeader
 import eu.kanade.presentation.manga.components.ExpandableMangaDescription
@@ -541,6 +546,7 @@ private fun MangaScreenSmallImpl(
                 icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
                 onClick = onContinueReading,
                 expanded = chapterListState.shouldExpandFAB(),
+                shape = CircleShape,
                 modifier = Modifier.animateFloatingActionButton(
                     visible = isFABVisible,
                     alignment = Alignment.BottomEnd,
@@ -999,6 +1005,7 @@ private fun MangaScreenLargeImpl(
                 icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
                 onClick = onContinueReading,
                 expanded = chapterListState.shouldExpandFAB(),
+                shape = CircleShape,
                 modifier = Modifier.animateFloatingActionButton(
                     visible = isFABVisible,
                     alignment = Alignment.BottomEnd,
@@ -1298,9 +1305,13 @@ private fun LazyListScope.sharedChapterItems(
     onChapterSelected: (ChapterList.Item, Boolean, Boolean) -> Unit,
     onChapterSwipe: (ChapterList.Item, LibraryPreferences.ChapterSwipeAction) -> Unit,
 ) {
-    items(
+    val groupPositions = resolveSectionCardPositions(
         items = chapters,
-        key = { item ->
+        isHeader = { it is ChapterList.MissingCount },
+    )
+    itemsIndexed(
+        items = chapters,
+        key = { _, item ->
             when (item) {
                 // KMK: using hashcode to prevent edge-cases where the missing count might duplicate,
                 // especially on merged manga
@@ -1308,8 +1319,8 @@ private fun LazyListScope.sharedChapterItems(
                 is ChapterList.Item -> "chapter-${item.id}"
             }
         },
-        contentType = { MangaScreenItem.CHAPTER },
-    ) { item ->
+        contentType = { _, _ -> MangaScreenItem.CHAPTER },
+    ) { index, item ->
         val haptic = LocalHapticFeedback.current
 
         when (item) {
@@ -1317,73 +1328,88 @@ private fun LazyListScope.sharedChapterItems(
                 MissingChapterCountListItem(count = item.count)
             }
             is ChapterList.Item -> {
-                MangaChapterListItem(
-                    title = if (manga.displayMode == Manga.CHAPTER_DISPLAY_NUMBER) {
-                        stringResource(
-                            MR.strings.display_mode_chapter,
-                            formatChapterNumber(item.chapter.chapterNumber),
-                        )
-                    } else {
-                        item.chapter.name
-                    },
-                    date = item.chapter.dateUpload
-                        .takeIf { it > 0L }
-                        ?.let {
-                            // SY -->
-                            if (manga.isEhBasedManga()) {
-                                MetadataUtil.EX_DATE_FORMAT
-                                    .format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()))
-                            } else {
-                                relativeDateText(item.chapter.dateUpload)
-                            }
-                            // SY <--
-                        },
-                    readProgress = item.chapter.lastPageRead
-                        .takeIf {
-                            /* SY --> */(!item.chapter.read || alwaysShowReadingProgress)/* SY <-- */ && it > 0L
-                        }
-                        ?.let {
+                val pos = groupPositions[index] ?: GroupCardPosition.Single
+                val bottomGap = if (pos == GroupCardPosition.Bottom || pos == GroupCardPosition.Single) 8.dp else 0.dp
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = bottomGap)
+                        .mochikuGroupedCardContainer(position = pos, cornerRadius = 18.dp),
+                ) {
+                    MangaChapterListItem(
+                        title = if (manga.displayMode == Manga.CHAPTER_DISPLAY_NUMBER) {
                             stringResource(
-                                MR.strings.chapter_progress,
-                                it + 1,
+                                MR.strings.display_mode_chapter,
+                                formatChapterNumber(item.chapter.chapterNumber),
+                            )
+                        } else {
+                            item.chapter.name
+                        },
+                        date = item.chapter.dateUpload
+                            .takeIf { it > 0L }
+                            ?.let {
+                                // SY -->
+                                if (manga.isEhBasedManga()) {
+                                    MetadataUtil.EX_DATE_FORMAT
+                                        .format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()))
+                                } else {
+                                    relativeDateText(item.chapter.dateUpload)
+                                }
+                                // SY <--
+                            },
+                        readProgress = item.chapter.lastPageRead
+                            .takeIf {
+                                /* SY --> */(!item.chapter.read || alwaysShowReadingProgress)/* SY <-- */ && it > 0L
+                            }
+                            ?.let {
+                                stringResource(
+                                    MR.strings.chapter_progress,
+                                    it + 1,
+                                )
+                            },
+                        scanlator = item.chapter.scanlator.takeIf {
+                            !it.isNullOrBlank() /* SY --> */ && item.showScanlator /* SY <-- */
+                        },
+                        // SY -->
+                        sourceName = item.sourceName,
+                        // SY <--
+                        read = item.chapter.read,
+                        bookmark = item.chapter.bookmark,
+                        selected = item.selected,
+                        downloadIndicatorEnabled =
+                        !isAnyChapterSelected && !(mergedData?.manga?.get(item.chapter.mangaId) ?: manga).isLocal(),
+                        downloadStateProvider = { item.downloadState },
+                        downloadProgressProvider = { item.downloadProgress },
+                        chapterSwipeStartAction = chapterSwipeStartAction,
+                        chapterSwipeEndAction = chapterSwipeEndAction,
+                        onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onChapterSelected(item, !item.selected, true)
+                        },
+                        onClick = {
+                            onChapterItemClick(
+                                chapterItem = item,
+                                isAnyChapterSelected = isAnyChapterSelected,
+                                onToggleSelection = { onChapterSelected(item, !item.selected, false) },
+                                onChapterClicked = onChapterClicked,
                             )
                         },
-                    scanlator = item.chapter.scanlator.takeIf {
-                        !it.isNullOrBlank() /* SY --> */ && item.showScanlator /* SY <-- */
-                    },
-                    // SY -->
-                    sourceName = item.sourceName,
-                    // SY <--
-                    read = item.chapter.read,
-                    bookmark = item.chapter.bookmark,
-                    selected = item.selected,
-                    downloadIndicatorEnabled =
-                    !isAnyChapterSelected && !(mergedData?.manga?.get(item.chapter.mangaId) ?: manga).isLocal(),
-                    downloadStateProvider = { item.downloadState },
-                    downloadProgressProvider = { item.downloadProgress },
-                    chapterSwipeStartAction = chapterSwipeStartAction,
-                    chapterSwipeEndAction = chapterSwipeEndAction,
-                    onLongClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onChapterSelected(item, !item.selected, true)
-                    },
-                    onClick = {
-                        onChapterItemClick(
-                            chapterItem = item,
-                            isAnyChapterSelected = isAnyChapterSelected,
-                            onToggleSelection = { onChapterSelected(item, !item.selected, false) },
-                            onChapterClicked = onChapterClicked,
+                        onDownloadClick = if (onDownloadChapter != null) {
+                            { onDownloadChapter(listOf(item), it) }
+                        } else {
+                            null
+                        },
+                        onChapterSwipe = {
+                            onChapterSwipe(item, it)
+                        },
+                    )
+                    if (pos == GroupCardPosition.Top || pos == GroupCardPosition.Middle) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                         )
-                    },
-                    onDownloadClick = if (onDownloadChapter != null) {
-                        { onDownloadChapter(listOf(item), it) }
-                    } else {
-                        null
-                    },
-                    onChapterSwipe = {
-                        onChapterSwipe(item, it)
-                    },
-                )
+                    }
+                }
             }
         }
     }

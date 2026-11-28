@@ -1,30 +1,40 @@
 package eu.kanade.presentation.more.settings.screen
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.paddingFromBaseline
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +44,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
@@ -47,7 +58,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import eu.kanade.presentation.components.MochikuPillCard
 import eu.kanade.presentation.components.UpIcon
+import eu.kanade.presentation.components.mochikuCardBorderStroke
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.util.Screen
 import tachiyomi.i18n.MR
@@ -66,6 +79,7 @@ class SettingsSearchScreen : Screen() {
         val focusManager = LocalFocusManager.current
         val focusRequester = remember { FocusRequester() }
         val listState = rememberLazyListState()
+        val colorScheme = MaterialTheme.colorScheme
 
         // Hide keyboard on change screen
         DisposableEffect(Unit) {
@@ -87,56 +101,92 @@ class SettingsSearchScreen : Screen() {
         }
 
         val textFieldState = rememberTextFieldState()
+        val statusBarPadding = WindowInsets.statusBars.only(WindowInsetsSides.Top).asPaddingValues()
         Scaffold(
             topBar = {
-                Column {
-                    TopAppBar(
-                        navigationIcon = {
-                            val canPop = remember { navigator.canPop }
-                            if (canPop) {
-                                IconButton(onClick = navigator::pop) {
-                                    UpIcon()
-                                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(statusBarPadding)
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    val canPop = remember { navigator.canPop }
+                    if (canPop) {
+                        Surface(
+                            onClick = navigator::pop,
+                            shape = CircleShape,
+                            color = colorScheme.surfaceContainerLow,
+                            border = mochikuCardBorderStroke(),
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+                                UpIcon()
                             }
-                        },
-                        title = {
+                        }
+                    }
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
+                        shape = CircleShape,
+                        color = colorScheme.surfaceContainerLow,
+                        border = mochikuCardBorderStroke(),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = null,
+                                tint = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
                             BasicTextField(
                                 state = textFieldState,
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .weight(1f)
                                     .focusRequester(focusRequester)
                                     .runOnEnterKeyPressed(action = focusManager::clearFocus),
-                                textStyle = MaterialTheme.typography.bodyLarge
-                                    .copy(color = MaterialTheme.colorScheme.onSurface),
+                                textStyle = MaterialTheme.typography.bodyMedium
+                                    .copy(color = colorScheme.onSurface),
                                 lineLimits = TextFieldLineLimits.SingleLine,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 onKeyboardAction = { focusManager.clearFocus() },
-                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                cursorBrush = SolidColor(colorScheme.primary),
                                 decorator = {
                                     if (textFieldState.text.isEmpty()) {
                                         Text(
                                             text = stringResource(MR.strings.action_search_settings),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
                                         )
                                     }
                                     it()
                                 },
                             )
-                        },
-                        actions = {
                             if (textFieldState.text.isNotEmpty()) {
-                                IconButton(onClick = { textFieldState.clearText() }) {
+                                IconButton(
+                                    onClick = { textFieldState.clearText() },
+                                    modifier = Modifier.size(28.dp),
+                                ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Close,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        tint = colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp),
                                     )
                                 }
                             }
-                        },
-                    )
-                    HorizontalDivider()
+                        }
+                    }
                 }
             },
         ) { contentPadding ->
@@ -222,33 +272,60 @@ private fun SearchResult(
                 LazyColumn(
                     modifier = modifier.fillMaxSize(),
                     state = listState,
-                    contentPadding = contentPadding,
+                    contentPadding = PaddingValues(
+                        top = contentPadding.calculateTopPadding() + 6.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 16.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     items(
                         items = it,
                         key = { i -> "settings-search-${i.hashCode()}" },
                     ) { item ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onItemClick(item) }
-                                .padding(horizontal = 24.dp, vertical = 14.dp),
+                        MochikuPillCard(
+                            onClick = { onItemClick(item) },
+                            cornerRadius = 18.dp,
+                            modifier = Modifier.padding(horizontal = 16.dp),
                         ) {
-                            Text(
-                                text = item.title,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                fontWeight = FontWeight.Normal,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                text = item.breadcrumbs,
-                                modifier = Modifier.paddingFromBaseline(top = 16.dp),
-                                maxLines = 1,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Text(
+                                        text = item.title,
+                                        overflow = TextOverflow.Ellipsis,
+                                        maxLines = 1,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    Text(
+                                        text = item.breadcrumbs,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                            .padding(horizontal = 10.dp, vertical = 3.dp),
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
                         }
                     }
                 }

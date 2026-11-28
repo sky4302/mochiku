@@ -13,16 +13,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -45,6 +47,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import eu.kanade.presentation.components.GroupCardPosition
+import eu.kanade.presentation.components.mochikuGroupedCardContainer
+import eu.kanade.presentation.components.resolveSectionCardPositions
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.ChapterDownloadIndicator
 import eu.kanade.presentation.manga.components.DotSeparatorText
@@ -109,21 +114,29 @@ internal fun LazyListScope.updatesUiItems(
     onUpdateSwipe: (UpdatesItem, LibraryPreferences.ChapterSwipeAction) -> Unit,
     // KMK <--
 ) {
-    items(
+    val groupPositions = resolveSectionCardPositions(
         items = uiModels,
-        contentType = {
+        isHeader = { it is UpdatesUiModel.Header },
+        isVisible = {
+            it is UpdatesUiModel.Leader ||
+                (it is UpdatesUiModel.Item && expandedState.contains(it.item.update.groupByDateAndManga()))
+        },
+    )
+    itemsIndexed(
+        items = uiModels,
+        contentType = { _, it ->
             when (it) {
                 is UpdatesUiModel.Header -> "header"
                 is UpdatesUiModel.Item -> "item"
             }
         },
-        key = {
+        key = { _, it ->
             when (it) {
                 is UpdatesUiModel.Header -> "updatesHeader-${it.hashCode()}"
                 is UpdatesUiModel.Item -> "updates-${it.item.update.mangaId}-${it.item.update.chapterId}"
             }
         },
-    ) { item ->
+    ) { index, item ->
         when (item) {
             is UpdatesUiModel.Header -> {
                 // KMK -->
@@ -140,79 +153,94 @@ internal fun LazyListScope.updatesUiItems(
                 // KMK -->
                 val isLeader = item is UpdatesUiModel.Leader
                 val isExpanded = expandedState.contains(updatesItem.update.groupByDateAndManga())
+                val pos = groupPositions[index] ?: GroupCardPosition.Single
+                val bottomGap = if (pos == GroupCardPosition.Bottom || pos == GroupCardPosition.Single) 8.dp else 0.dp
 
                 AnimatedVisibility(
                     visible = isLeader || isExpanded,
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically(),
+                    modifier = Modifier.animateItemFastScroll(),
                 ) {
                     // KMK <--
-                    UpdatesUiItem(
-                        modifier = Modifier.animateItemFastScroll(),
-                        update = updatesItem.update,
-                        selected = updatesItem.selected,
-                        readProgress = updatesItem.update.lastPageRead
-                            .takeIf {
-                                /* SY --> */(
-                                    !updatesItem.update.read ||
-                                        (preserveReadingPosition && updatesItem.isEhBasedUpdate())
-                                    )/* SY <-- */ &&
-                                    it > 0L
-                            }
-                            ?.let {
-                                stringResource(
-                                    MR.strings.chapter_progress,
-                                    it + 1,
-                                )
-                            },
-                        onLongClick = {
-                            onUpdateSelected(
-                                updatesItem,
-                                // KMK -->
-                                UpdateSelectionOptions(
-                                    selected = !updatesItem.selected,
-                                    fromLongPress = true,
-                                    isGroup = isLeader && item.isExpandable,
-                                    isExpanded = isExpanded,
-                                ),
-                                // KMK <--
-                            )
-                        },
-                        onClick = {
-                            when {
-                                selectionMode -> onUpdateSelected(
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, bottom = bottomGap)
+                            .mochikuGroupedCardContainer(position = pos, cornerRadius = 18.dp),
+                    ) {
+                        UpdatesUiItem(
+                            update = updatesItem.update,
+                            selected = updatesItem.selected,
+                            readProgress = updatesItem.update.lastPageRead
+                                .takeIf {
+                                    /* SY --> */(
+                                        !updatesItem.update.read ||
+                                            (preserveReadingPosition && updatesItem.isEhBasedUpdate())
+                                        )/* SY <-- */ &&
+                                        it > 0L
+                                }
+                                ?.let {
+                                    stringResource(
+                                        MR.strings.chapter_progress,
+                                        it + 1,
+                                    )
+                                },
+                            onLongClick = {
+                                onUpdateSelected(
                                     updatesItem,
                                     // KMK -->
                                     UpdateSelectionOptions(
                                         selected = !updatesItem.selected,
-                                        fromLongPress = false,
+                                        fromLongPress = true,
                                         isGroup = isLeader && item.isExpandable,
                                         isExpanded = isExpanded,
                                     ),
                                     // KMK <--
                                 )
-                                else -> onClickUpdate(updatesItem)
-                            }
-                        },
-                        onClickCover = { onClickCover(updatesItem) }.takeIf { !selectionMode },
-                        onDownloadChapter = { action: ChapterDownloadAction ->
-                            onDownloadChapter(listOf(updatesItem), action)
-                        }.takeIf { !selectionMode },
-                        downloadStateProvider = updatesItem.downloadStateProvider,
-                        downloadProgressProvider = updatesItem.downloadProgressProvider,
-                        // KMK -->
-                        updateSwipeStartAction = updateSwipeStartAction,
-                        updateSwipeEndAction = updateSwipeEndAction,
-                        onUpdateSwipe = {
-                            onUpdateSwipe(updatesItem, it)
-                        },
-                        isLeader = isLeader,
-                        isExpandable = item.isExpandable,
-                        expanded = isExpanded,
-                        collapseToggle = collapseToggle,
-                        usePanoramaCover = usePanoramaCover,
-                        // KMK <--
-                    )
+                            },
+                            onClick = {
+                                when {
+                                    selectionMode -> onUpdateSelected(
+                                        updatesItem,
+                                        // KMK -->
+                                        UpdateSelectionOptions(
+                                            selected = !updatesItem.selected,
+                                            fromLongPress = false,
+                                            isGroup = isLeader && item.isExpandable,
+                                            isExpanded = isExpanded,
+                                        ),
+                                        // KMK <--
+                                    )
+                                    else -> onClickUpdate(updatesItem)
+                                }
+                            },
+                            onClickCover = { onClickCover(updatesItem) }.takeIf { !selectionMode },
+                            onDownloadChapter = { action: ChapterDownloadAction ->
+                                onDownloadChapter(listOf(updatesItem), action)
+                            }.takeIf { !selectionMode },
+                            downloadStateProvider = updatesItem.downloadStateProvider,
+                            downloadProgressProvider = updatesItem.downloadProgressProvider,
+                            // KMK -->
+                            updateSwipeStartAction = updateSwipeStartAction,
+                            updateSwipeEndAction = updateSwipeEndAction,
+                            onUpdateSwipe = {
+                                onUpdateSwipe(updatesItem, it)
+                            },
+                            isLeader = isLeader,
+                            isExpandable = item.isExpandable,
+                            expanded = isExpanded,
+                            collapseToggle = collapseToggle,
+                            usePanoramaCover = usePanoramaCover,
+                            // KMK <--
+                        )
+                        if (pos == GroupCardPosition.Top || pos == GroupCardPosition.Middle) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            )
+                        }
+                    }
                 }
             }
         }

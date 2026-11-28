@@ -74,7 +74,14 @@ jobs:
           echo "=== Prepared APKs for distribution ==="
           ls -lh output_apk/
 
-      - name: Upload APK Artifacts
+      - name: Upload ARM64 APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mochiku-arm64-v8a
+          path: output_apk/Mochiku-arm64-v8a.apk
+          retention-days: 30
+
+      - name: Upload All APK Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Mochiku-APKs

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.PlayArrow
@@ -234,6 +235,7 @@ object DownloadQueueScreen : Screen() {
                         }
                     },
                     expanded = fabExpanded,
+                    shape = CircleShape,
                     modifier = Modifier.animateFloatingActionButton(
                         visible = downloadList.isNotEmpty(),
                         alignment = Alignment.BottomEnd,

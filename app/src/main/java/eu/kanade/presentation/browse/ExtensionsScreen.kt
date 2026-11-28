@@ -10,9 +10,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.GetApp
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -47,7 +49,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.browse.components.BaseBrowseItem
 import eu.kanade.presentation.browse.components.ExtensionIcon
+import eu.kanade.presentation.components.GroupCardPosition
 import eu.kanade.presentation.components.WarningBanner
+import eu.kanade.presentation.components.mochikuGroupedCardContainer
+import eu.kanade.presentation.components.resolveContiguousGroupCardPosition
 import eu.kanade.presentation.manga.components.DotSeparatorNoSpaceText
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
@@ -233,54 +238,72 @@ private fun ExtensionContent(
                 }
             }
 
-            items(
+            itemsIndexed(
                 items = items,
-                contentType = { "item" },
-                key = { item ->
+                contentType = { _, _ -> "item" },
+                key = { _, item ->
                     when (item.extension) {
                         is Extension.Untrusted -> "extension-untrusted-${item.hashCode()}"
                         is Extension.Installed -> "extension-installed-${item.hashCode()}"
                         is Extension.Available -> "extension-available-${item.hashCode()}"
                     }
                 },
-            ) { item ->
-                ExtensionItem(
-                    modifier = Modifier.animateItemFastScroll(),
-                    item = item,
-                    onClickItem = {
-                        when (it) {
-                            is Extension.Available -> onInstallExtension(it)
-                            is Extension.Installed -> onOpenExtension(it)
-                            is Extension.Untrusted -> {
-                                trustState = it
-                            }
-                        }
-                    },
-                    onLongClickItem = onLongClickItem,
-                    onClickItemSecondaryAction = {
-                        when (it) {
-                            is Extension.Available -> onOpenWebView(it)
-                            is Extension.Installed -> onOpenExtension(it)
-                            else -> {}
-                        }
-                    },
-                    onClickItemCancel = onClickItemCancel,
-                    onClickItemAction = {
-                        when (it) {
-                            is Extension.Available -> onInstallExtension(it)
-                            is Extension.Installed -> {
-                                if (it.hasUpdate) {
-                                    onUpdateExtension(it)
-                                } else {
-                                    onOpenExtension(it)
+            ) { index, item ->
+                val pos = resolveContiguousGroupCardPosition(
+                    hasPreviousInGroup = index > 0,
+                    hasNextInGroup = index < items.lastIndex,
+                )
+                val bottomGap = if (pos == GroupCardPosition.Bottom || pos == GroupCardPosition.Single) 8.dp else 0.dp
+                Column(
+                    modifier = Modifier
+                        .animateItemFastScroll()
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = bottomGap)
+                        .mochikuGroupedCardContainer(position = pos, cornerRadius = 18.dp),
+                ) {
+                    ExtensionItem(
+                        item = item,
+                        onClickItem = {
+                            when (it) {
+                                is Extension.Available -> onInstallExtension(it)
+                                is Extension.Installed -> onOpenExtension(it)
+                                is Extension.Untrusted -> {
+                                    trustState = it
                                 }
                             }
-                            is Extension.Untrusted -> {
-                                trustState = it
+                        },
+                        onLongClickItem = onLongClickItem,
+                        onClickItemSecondaryAction = {
+                            when (it) {
+                                is Extension.Available -> onOpenWebView(it)
+                                is Extension.Installed -> onOpenExtension(it)
+                                else -> {}
                             }
-                        }
-                    },
-                )
+                        },
+                        onClickItemCancel = onClickItemCancel,
+                        onClickItemAction = {
+                            when (it) {
+                                is Extension.Available -> onInstallExtension(it)
+                                is Extension.Installed -> {
+                                    if (it.hasUpdate) {
+                                        onUpdateExtension(it)
+                                    } else {
+                                        onOpenExtension(it)
+                                    }
+                                }
+                                is Extension.Untrusted -> {
+                                    trustState = it
+                                }
+                            }
+                        },
+                    )
+                    if (pos == GroupCardPosition.Top || pos == GroupCardPosition.Middle) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        )
+                    }
+                }
             }
         }
     }

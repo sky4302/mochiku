@@ -1,6 +1,8 @@
 package eu.kanade.presentation.library.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -13,16 +15,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableFloatState
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import eu.kanade.presentation.components.mochikuCardBorderStroke
 import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.MangaCoverHide
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
@@ -69,6 +71,9 @@ private val ContinueReadingButtonGridPadding = 6.dp
 private val ContinueReadingButtonListSpacing = 8.dp
 
 internal const val GRID_SELECTED_COVER_ALPHA = 0.76f
+
+private val GridCoverCornerRadius = 12.dp
+private val GridCoverShape = RoundedCornerShape(GridCoverCornerRadius)
 
 /**
  * Layout of grid list item with title overlaying the cover.
@@ -105,6 +110,7 @@ fun MangaCompactGridItem(
                     MangaCoverHide.Book(
                         modifier = Modifier
                             .fillMaxWidth(),
+                        shape = GridCoverShape,
                         bgColor = bgColor ?: MaterialTheme.colorScheme.surface.takeIf { isSelected },
                         tint = onBgColor,
                     )
@@ -117,6 +123,7 @@ fun MangaCompactGridItem(
                             // KMK <--
                             .fillMaxWidth(),
                         data = coverData,
+                        shape = GridCoverShape,
                         // KMK -->
                         alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
                         bgColor = bgColor ?: MaterialTheme.colorScheme.surface.takeIf { isSelected },
@@ -158,7 +165,7 @@ private fun BoxScope.CoverTextOverlay(
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
+            .clip(RoundedCornerShape(bottomStart = GridCoverCornerRadius, bottomEnd = GridCoverCornerRadius))
             .background(
                 Brush.verticalGradient(
                     0f to Color.Transparent,
@@ -241,6 +248,7 @@ fun MangaComfortableGridItem(
                         MangaCoverHide.Book(
                             modifier = Modifier
                                 .fillMaxWidth(),
+                            shape = GridCoverShape,
                             bgColor = bgColor ?: MaterialTheme.colorScheme.surface.takeIf { isSelected },
                             tint = onBgColor,
                         )
@@ -253,6 +261,7 @@ fun MangaComfortableGridItem(
                                     // KMK <--
                                     .fillMaxWidth(),
                                 data = coverData,
+                                shape = GridCoverShape,
                                 // KMK -->
                                 alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
                                 bgColor = bgColor ?: MaterialTheme.colorScheme.surface.takeIf { isSelected },
@@ -272,6 +281,7 @@ fun MangaComfortableGridItem(
                                     // KMK <--
                                     .fillMaxWidth(),
                                 data = coverData,
+                                shape = GridCoverShape,
                                 // KMK -->
                                 alpha = if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha,
                                 bgColor = bgColor ?: MaterialTheme.colorScheme.surface.takeIf { isSelected },
@@ -340,15 +350,21 @@ private fun MangaGridCover(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(ratio),
+            .aspectRatio(ratio)
+            .clip(GridCoverShape)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+                GridCoverShape,
+            ),
     ) {
         cover()
         content?.invoke(this)
         if (badgesStart != null) {
             BadgeGroup(
                 modifier = Modifier
-                    .padding(4.dp)
+                    .padding(6.dp)
                     .align(Alignment.TopStart),
+                shape = CircleShape,
                 content = badgesStart,
             )
         }
@@ -356,8 +372,9 @@ private fun MangaGridCover(
         if (badgesEnd != null) {
             BadgeGroup(
                 modifier = Modifier
-                    .padding(4.dp)
+                    .padding(6.dp)
                     .align(Alignment.TopEnd),
+                shape = CircleShape,
                 content = badgesEnd,
             )
         }
@@ -509,16 +526,15 @@ private fun ContinueReadingButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        FilledIconButton(
-            onClick = onClick,
-            shape = MaterialTheme.shapes.small,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                contentColor = contentColorFor(MaterialTheme.colorScheme.primaryContainer),
-            ),
-            modifier = Modifier.size(size),
-        ) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = mochikuCardBorderStroke(),
+        modifier = modifier.size(size),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = Icons.Filled.PlayArrow,
                 contentDescription = stringResource(MR.strings.action_resume),

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -34,6 +35,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
+import eu.kanade.presentation.components.mochikuFilterChipColors
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.library.LibrarySettingsScreenModel
@@ -322,11 +324,14 @@ private fun ColumnScope.DisplayPage(
 ) {
     val displayMode by screenModel.libraryPreferences.displayMode().collectAsState()
     SettingsChipRow(MR.strings.action_display_mode) {
+        val chipColors = mochikuFilterChipColors()
         displayModes.map { (titleRes, mode) ->
             FilterChip(
                 selected = displayMode == mode,
                 onClick = { screenModel.setDisplayMode(mode) },
                 label = { Text(stringResource(titleRes)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }

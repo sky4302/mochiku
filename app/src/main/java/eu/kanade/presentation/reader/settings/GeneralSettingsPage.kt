@@ -1,11 +1,13 @@
 package eu.kanade.presentation.reader.settings
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import eu.kanade.presentation.components.mochikuFilterChipColors
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import eu.kanade.tachiyomi.util.system.hasDisplayCutout
@@ -46,12 +48,15 @@ internal fun GeneralPage(screenModel: ReaderSettingsScreenModel) {
     val flashColorPref = screenModel.preferences.flashColor()
     val flashColor by flashColorPref.collectAsState()
 
+    val chipColors = mochikuFilterChipColors()
     SettingsChipRow(MR.strings.pref_reader_theme) {
         themes.map { (labelRes, value) ->
             FilterChip(
                 selected = readerTheme == value,
                 onClick = { screenModel.preferences.readerTheme().set(value) },
                 label = { Text(stringResource(labelRes)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -145,6 +150,8 @@ internal fun GeneralPage(screenModel: ReaderSettingsScreenModel) {
                     selected = flashColor == value,
                     onClick = { flashColorPref.set(value) },
                     label = { Text(stringResource(labelRes)) },
+                    shape = CircleShape,
+                    colors = chipColors,
                 )
             }
         }

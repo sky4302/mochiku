@@ -1,5 +1,6 @@
 package eu.kanade.presentation.reader.settings
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -9,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import eu.kanade.domain.manga.model.readerOrientation
 import eu.kanade.domain.manga.model.readingMode
+import eu.kanade.presentation.components.mochikuFilterChipColors
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
@@ -30,6 +32,7 @@ internal fun ReadingModePage(screenModel: ReaderSettingsScreenModel) {
     HeadingItem(MR.strings.pref_category_for_this_series)
     val manga by screenModel.mangaFlow.collectAsState()
 
+    val chipColors = mochikuFilterChipColors()
     val readingMode = remember(manga) { ReadingMode.fromPreference(manga?.readingMode?.toInt()) }
     SettingsChipRow(MR.strings.pref_category_reading_mode) {
         ReadingMode.entries.map {
@@ -37,6 +40,8 @@ internal fun ReadingModePage(screenModel: ReaderSettingsScreenModel) {
                 selected = it == readingMode,
                 onClick = { screenModel.onChangeReadingMode(it) },
                 label = { Text(stringResource(it.stringRes)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -48,6 +53,8 @@ internal fun ReadingModePage(screenModel: ReaderSettingsScreenModel) {
                 selected = it == orientation,
                 onClick = { screenModel.onChangeOrientation(it) },
                 label = { Text(stringResource(it.stringRes)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -81,6 +88,7 @@ private fun PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
         onSelectInvertMode = screenModel.preferences.pagerNavInverted()::set,
     )
 
+    val chipColors = mochikuFilterChipColors()
     val imageScaleType by screenModel.preferences.imageScaleType().collectAsState()
     SettingsChipRow(MR.strings.pref_image_scale_type) {
         ReaderPreferences.ImageScaleType.mapIndexed { index, it ->
@@ -88,6 +96,8 @@ private fun PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
                 selected = imageScaleType == index + 1,
                 onClick = { screenModel.preferences.imageScaleType().set(index + 1) },
                 label = { Text(stringResource(it)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -99,6 +109,8 @@ private fun PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
                 selected = zoomStart == index + 1,
                 onClick = { screenModel.preferences.zoomStart().set(index + 1) },
                 label = { Text(stringResource(it)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -111,6 +123,8 @@ private fun PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
                 selected = pageLayout == index,
                 onClick = { screenModel.preferences.pageLayout().set(index) },
                 label = { Text(stringResource(it)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -200,6 +214,8 @@ private fun PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
                 selected = centerMarginType == index,
                 onClick = { screenModel.preferences.centerMarginType().set(index) },
                 label = { Text(stringResource(it)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -230,6 +246,7 @@ private fun WebtoonViewerSettings(
     val webtoonScaleTypePref = screenModel.preferences.webtoonScaleType()
     val webtoonScaleType by webtoonScaleTypePref.collectAsState()
     val webtoonSmartScaleLongStripGap = screenModel.preferences.longStripGapSmartScale().get()
+    val chipColors = mochikuFilterChipColors()
     if (readingMode != ReadingMode.CONTINUOUS_VERTICAL || webtoonSmartScaleLongStripGap) {
         SettingsChipRow(KMR.strings.pref_webtoon_scale_type) {
             ReaderPreferences.WebtoonScaleType.entries.forEach { scaleType ->
@@ -237,6 +254,8 @@ private fun WebtoonViewerSettings(
                     selected = webtoonScaleType == scaleType,
                     onClick = { webtoonScaleTypePref.set(scaleType) },
                     label = { Text(stringResource(scaleType.titleRes)) },
+                    shape = CircleShape,
+                    colors = chipColors,
                 )
             }
         }
@@ -340,12 +359,15 @@ private fun TapZonesItems(
     invertMode: ReaderPreferences.TappingInvertMode,
     onSelectInvertMode: (ReaderPreferences.TappingInvertMode) -> Unit,
 ) {
+    val chipColors = mochikuFilterChipColors()
     SettingsChipRow(MR.strings.pref_viewer_nav) {
         ReaderPreferences.TapZones.mapIndexed { index, it ->
             FilterChip(
                 selected = selected == index,
                 onClick = { onSelect(index) },
                 label = { Text(stringResource(it)) },
+                shape = CircleShape,
+                colors = chipColors,
             )
         }
     }
@@ -357,6 +379,8 @@ private fun TapZonesItems(
                     selected = it == invertMode,
                     onClick = { onSelectInvertMode(it) },
                     label = { Text(stringResource(it.titleRes)) },
+                    shape = CircleShape,
+                    colors = chipColors,
                 )
             }
         }

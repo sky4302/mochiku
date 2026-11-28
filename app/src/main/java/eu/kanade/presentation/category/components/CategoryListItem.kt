@@ -1,16 +1,19 @@
 package eu.kanade.presentation.category.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -19,7 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import eu.kanade.presentation.components.MochikuPillCard
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import tachiyomi.domain.category.model.Category
 import tachiyomi.i18n.MR
@@ -37,7 +44,10 @@ fun ReorderableCollectionItemScope.CategoryListItem(
     // KMK <--
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(modifier = modifier) {
+    MochikuPillCard(
+        modifier = modifier,
+        cornerRadius = 18.dp,
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -45,7 +55,7 @@ fun ReorderableCollectionItemScope.CategoryListItem(
                 .padding(vertical = MaterialTheme.padding.small)
                 .padding(
                     start = MaterialTheme.padding.small,
-                    end = MaterialTheme.padding.medium,
+                    end = MaterialTheme.padding.small,
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -56,14 +66,33 @@ fun ReorderableCollectionItemScope.CategoryListItem(
                     .padding(MaterialTheme.padding.medium)
                     .draggableHandle(),
             )
-            Text(
-                text = category.name,
-                // KMK -->
-                color = LocalContentColor.current.let { if (category.hidden) it.copy(alpha = 0.6f) else it },
-                textDecoration = TextDecoration.LineThrough.takeIf { category.hidden },
-                // KMK <--
+            Column(
                 modifier = Modifier.weight(1f),
-            )
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = category.name,
+                    // KMK -->
+                    color = LocalContentColor.current.let { if (category.hidden) it.copy(alpha = 0.6f) else it },
+                    textDecoration = TextDecoration.LineThrough.takeIf { category.hidden },
+                    // KMK <--
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                // KMK -->
+                if (category.hidden) {
+                    Text(
+                        text = stringResource(KMR.strings.action_hide),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
+                // KMK <--
+            }
             IconButton(onClick = onRename) {
                 Icon(
                     imageVector = Icons.Outlined.Edit,

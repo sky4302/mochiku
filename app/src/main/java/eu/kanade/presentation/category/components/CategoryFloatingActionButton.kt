@@ -1,6 +1,7 @@
 package eu.kanade.presentation.category.components
 
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Icon
@@ -23,6 +24,7 @@ fun CategoryFloatingActionButton(
         icon = { Icon(imageVector = Icons.Outlined.Add, contentDescription = null) },
         onClick = onCreate,
         expanded = lazyListState.shouldExpandFAB(),
+        shape = CircleShape,
         modifier = modifier,
     )
 }

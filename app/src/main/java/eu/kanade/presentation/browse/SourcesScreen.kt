@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -39,7 +40,10 @@ import androidx.compose.ui.unit.times
 import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.presentation.browse.components.BaseSourceItem
 import eu.kanade.presentation.components.AnimatedFloatingSearchBox
+import eu.kanade.presentation.components.GroupCardPosition
 import eu.kanade.presentation.components.SOURCE_SEARCH_BOX_HEIGHT
+import eu.kanade.presentation.components.mochikuGroupedCardContainer
+import eu.kanade.presentation.components.resolveSectionCardPositions
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
@@ -106,15 +110,21 @@ fun SourcesScreen(
                 val density = LocalDensity.current
                 var searchBoxHeight by remember { mutableStateOf(SOURCE_SEARCH_BOX_HEIGHT) }
 
+                val groupPositions = remember(state.items) {
+                    resolveSectionCardPositions(
+                        items = state.items,
+                        isHeader = { it is SourceUiModel.Header },
+                    )
+                }
                 FastScrollLazyColumn(
                     state = lazyListState,
                     contentPadding = PaddingValues(
                         top = searchBoxHeight,
-                        bottom = contentPadding.calculateBottomPadding(),
+                        bottom = contentPadding.calculateBottomPadding() + 8.dp,
                     ),
                     // KMK <--
                 ) {
-                    state.items.forEach { model ->
+                    state.items.forEachIndexed { index, model ->
                         when (model) {
                             is SourceUiModel.Header -> {
                                 stickyHeader(
@@ -134,21 +144,36 @@ fun SourcesScreen(
                                 }
                             }
                             is SourceUiModel.Item -> {
+                                val pos = groupPositions[index] ?: GroupCardPosition.Single
+                                val bottomGap = if (pos == GroupCardPosition.Bottom || pos == GroupCardPosition.Single) 8.dp else 0.dp
                                 item(
                                     key = "source-${model.source.key()}",
                                     contentType = "item",
                                 ) {
-                                    SourceItem(
-                                        modifier = Modifier.animateItemFastScroll(),
-                                        source = model.source,
-                                        // SY -->
-                                        showLatest = state.showLatest,
-                                        showPin = state.showPin,
-                                        // SY <--
-                                        onClickItem = onClickItem,
-                                        onLongClickItem = onLongClickItem,
-                                        onClickPin = onClickPin,
-                                    )
+                                    Column(
+                                        modifier = Modifier
+                                            .animateItemFastScroll()
+                                            .fillMaxWidth()
+                                            .padding(start = 16.dp, end = 16.dp, bottom = bottomGap)
+                                            .mochikuGroupedCardContainer(position = pos, cornerRadius = 18.dp),
+                                    ) {
+                                        SourceItem(
+                                            source = model.source,
+                                            // SY -->
+                                            showLatest = state.showLatest,
+                                            showPin = state.showPin,
+                                            // SY <--
+                                            onClickItem = onClickItem,
+                                            onLongClickItem = onLongClickItem,
+                                            onClickPin = onClickPin,
+                                        )
+                                        if (pos == GroupCardPosition.Top || pos == GroupCardPosition.Middle) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(horizontal = 16.dp),
+                                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

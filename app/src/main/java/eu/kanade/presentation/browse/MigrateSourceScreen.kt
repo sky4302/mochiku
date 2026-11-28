@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.SortByAlpha
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -35,12 +36,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.domain.source.model.installedExtension
 import eu.kanade.presentation.browse.components.BaseSourceItem
 import eu.kanade.presentation.browse.components.SourceIcon
 import eu.kanade.presentation.components.AnimatedFloatingSearchBox
+import eu.kanade.presentation.components.GroupCardPosition
 import eu.kanade.presentation.components.SOURCE_SEARCH_BOX_HEIGHT
+import eu.kanade.presentation.components.mochikuGroupedCardContainer
+import eu.kanade.presentation.components.resolveSectionCardPositions
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.migration.sources.MigrateSourceScreenModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
@@ -191,38 +196,56 @@ private fun MigrateSourceList(
             val density = LocalDensity.current
             var searchBoxHeight by remember { mutableStateOf(SOURCE_SEARCH_BOX_HEIGHT) }
 
+            val filteredList = remember(list, filterObsoleteSource, isHentaiEnabled) {
+                list.filter {
+                    !filterObsoleteSource ||
+                        (
+                            it.first.installedExtension?.isObsolete != false &&
+                                (!isHentaiEnabled || it.first.id !in eHentaiSourceIds)
+                            )
+                }
+            }
+            val groupPositions = remember(filteredList) {
+                resolveSectionCardPositions(
+                    items = filteredList,
+                    isHeader = { false },
+                )
+            }
+
             FastScrollLazyColumn(
                 state = lazyListState,
                 contentPadding = PaddingValues(
-                    top = searchBoxHeight,
-                    bottom = contentPadding.calculateBottomPadding(),
+                    top = searchBoxHeight + 4.dp,
+                    bottom = contentPadding.calculateBottomPadding() + 12.dp,
                 ),
                 // KMK <--
             ) {
-                items(
-                    items = list
-                        // KMK -->
-                        .filter {
-                            !filterObsoleteSource ||
-                                (
-                                    it.first.installedExtension?.isObsolete != false &&
-                                        (!isHentaiEnabled || it.first.id !in eHentaiSourceIds)
-                                    )
-                        },
-                    // KMK <--
-                    key = { (source, _) -> "migrate-${source.id}" },
-                ) { (source, count) ->
-                    MigrateSourceItem(
-                        // KMK -->
-                        // modifier = Modifier.animateItem(),
-                        modifier = Modifier.animateItemFastScroll()
-                            .padding(end = MaterialTheme.padding.small),
-                        // KMK <--
-                        source = source,
-                        count = count,
-                        onClickItem = { onClickItem(source) },
-                        onLongClickItem = { onLongClickItem(source) },
-                    )
+                itemsIndexed(
+                    items = filteredList,
+                    key = { _, (source, _) -> "migrate-${source.id}" },
+                ) { index, (source, count) ->
+                    val pos = groupPositions[index] ?: GroupCardPosition.Single
+                    val bottomGap = if (pos == GroupCardPosition.Bottom || pos == GroupCardPosition.Single) 8.dp else 0.dp
+                    Column(
+                        modifier = Modifier
+                            .animateItemFastScroll()
+                            .padding(start = 16.dp, end = 16.dp, bottom = bottomGap)
+                            .mochikuGroupedCardContainer(position = pos, cornerRadius = 18.dp),
+                    ) {
+                        MigrateSourceItem(
+                            modifier = Modifier.padding(end = MaterialTheme.padding.small),
+                            source = source,
+                            count = count,
+                            onClickItem = { onClickItem(source) },
+                            onLongClickItem = { onLongClickItem(source) },
+                        )
+                        if (pos == GroupCardPosition.Top || pos == GroupCardPosition.Middle) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            )
+                        }
+                    }
                 }
             }
 

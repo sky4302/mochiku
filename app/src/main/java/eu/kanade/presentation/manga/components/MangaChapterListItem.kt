@@ -100,7 +100,7 @@ fun MangaChapterListItem(
         startActions = listOfNotNull(swipeStart),
         endActions = listOfNotNull(swipeEnd),
         swipeThreshold = swipeActionThreshold,
-        backgroundUntilSwipeThreshold = MaterialTheme.colorScheme.surfaceContainerLowest,
+        backgroundUntilSwipeThreshold = Color.Transparent,
     ) {
         Row(
             modifier = Modifier

@@ -1,15 +1,18 @@
 package eu.kanade.presentation.history
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.FlipToBack
 import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -20,11 +23,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.AppBarTitle
+import eu.kanade.presentation.components.GroupCardPosition
 import eu.kanade.presentation.components.SearchToolbar
+import eu.kanade.presentation.components.mochikuGroupedCardContainer
 import eu.kanade.presentation.components.relativeDateText
+import eu.kanade.presentation.components.resolveSectionCardPositions
 import eu.kanade.presentation.history.components.HistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.animateItemFastScroll
@@ -165,19 +172,25 @@ private fun HistoryScreenContent(
     usePanoramaCover: Boolean,
     // KMK <--
 ) {
+    val groupPositions = remember(history) {
+        resolveSectionCardPositions(
+            items = history,
+            isHeader = { it is HistoryUiModel.Header },
+        )
+    }
     FastScrollLazyColumn(
         contentPadding = contentPadding,
     ) {
-        items(
+        itemsIndexed(
             items = history,
-            key = { "history-${it.hashCode()}" },
-            contentType = {
+            key = { _, it -> "history-${it.hashCode()}" },
+            contentType = { _, it ->
                 when (it) {
                     is HistoryUiModel.Header -> "header"
                     is HistoryUiModel.Item -> "item"
                 }
             },
-        ) { item ->
+        ) { index, item ->
             when (item) {
                 is HistoryUiModel.Header -> {
                     ListGroupHeader(
@@ -190,49 +203,64 @@ private fun HistoryScreenContent(
                     // KMK -->
                     val isSelected = remember(state.selection) { value.chapterId in state.selection }
                     // KMK <--
-                    HistoryItem(
-                        modifier = Modifier.animateItemFastScroll(),
-                        history = value,
-                        onClickCover = { onClickCover(value) },
-                        // KMK -->
-                        onClick = {
-                            when {
-                                selectionMode -> onHistorySelected(
+                    val pos = groupPositions[index] ?: GroupCardPosition.Single
+                    val bottomGap = if (pos == GroupCardPosition.Bottom || pos == GroupCardPosition.Single) 8.dp else 0.dp
+                    Column(
+                        modifier = Modifier
+                            .animateItemFastScroll()
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, bottom = bottomGap)
+                            .mochikuGroupedCardContainer(position = pos, cornerRadius = 18.dp),
+                    ) {
+                        HistoryItem(
+                            history = value,
+                            onClickCover = { onClickCover(value) },
+                            // KMK -->
+                            onClick = {
+                                when {
+                                    selectionMode -> onHistorySelected(
+                                        item.item,
+                                        HistorySelectionOptions(
+                                            selected = !isSelected,
+                                            fromLongPress = false,
+                                        ),
+                                    )
+                                    else -> onClickResume(value)
+                                }
+                            },
+                            onLongClick = {
+                                onHistorySelected(
                                     item.item,
                                     HistorySelectionOptions(
                                         selected = !isSelected,
-                                        fromLongPress = false,
+                                        fromLongPress = true,
                                     ),
                                 )
-                                else -> onClickResume(value)
-                            }
-                        },
-                        onLongClick = {
-                            onHistorySelected(
-                                item.item,
-                                HistorySelectionOptions(
-                                    selected = !isSelected,
-                                    fromLongPress = true,
-                                ),
-                            )
-                        },
-                        // KMK <--
-                        onClickDelete = { onClickDelete(value) },
-                        onClickFavorite = { onClickFavorite(value) },
-                        // KMK -->
-                        selected = isSelected,
-                        readProgress = value.lastPageRead
-                            .takeIf { !value.read && it > 0L }
-                            ?.let {
-                                stringResource(
-                                    MR.strings.chapter_progress,
-                                    it + 1,
-                                )
                             },
-                        hasUnread = value.unreadCount > 0,
-                        usePanoramaCover = usePanoramaCover,
-                        // KMK <--
-                    )
+                            // KMK <--
+                            onClickDelete = { onClickDelete(value) },
+                            onClickFavorite = { onClickFavorite(value) },
+                            // KMK -->
+                            selected = isSelected,
+                            readProgress = value.lastPageRead
+                                .takeIf { !value.read && it > 0L }
+                                ?.let {
+                                    stringResource(
+                                        MR.strings.chapter_progress,
+                                        it + 1,
+                                    )
+                                },
+                            hasUnread = value.unreadCount > 0,
+                            usePanoramaCover = usePanoramaCover,
+                            // KMK <--
+                        )
+                        if (pos == GroupCardPosition.Top || pos == GroupCardPosition.Middle) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            )
+                        }
+                    }
                 }
             }
         }

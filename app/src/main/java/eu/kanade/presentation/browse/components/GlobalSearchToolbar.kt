@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.FilterList
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.SearchToolbar
+import eu.kanade.presentation.components.mochikuFilterChipColors
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
@@ -89,6 +91,7 @@ fun GlobalSearchToolbar(
                 .padding(horizontal = MaterialTheme.padding.small),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
         ) {
+            val chipColors = mochikuFilterChipColors()
             // TODO: make this UX better; it only applies when triggering a new search
             if (!hideSourceFilter) {
                 // KMK -->
@@ -97,6 +100,8 @@ fun GlobalSearchToolbar(
                     FilterChip(
                         selected = sourceFilter == SourceFilter.PinnedOnly,
                         onClick = { onChangeSearchFilter(SourceFilter.PinnedOnly) },
+                        shape = CircleShape,
+                        colors = chipColors,
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Outlined.PushPin,
@@ -113,6 +118,8 @@ fun GlobalSearchToolbar(
                 FilterChip(
                     selected = sourceFilter == SourceFilter.All,
                     onClick = { onChangeSearchFilter(SourceFilter.All) },
+                    shape = CircleShape,
+                    colors = chipColors,
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.DoneAll,
@@ -132,6 +139,8 @@ fun GlobalSearchToolbar(
             FilterChip(
                 selected = onlyShowHasResults,
                 onClick = { onToggleResults() },
+                shape = CircleShape,
+                colors = chipColors,
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.FilterList,
