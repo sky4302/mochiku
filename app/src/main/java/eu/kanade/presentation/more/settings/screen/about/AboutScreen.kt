@@ -5,7 +5,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,7 +38,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.LogoHeader
-import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
+import eu.kanade.presentation.more.settings.widget.MochikuPillCard
+import eu.kanade.presentation.more.settings.widget.MochikuPillPreferenceRow
 import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.BuildConfig
@@ -96,18 +101,28 @@ class AboutScreen : Screen() {
                 )
             },
         ) { contentPadding ->
+            val layoutDirection = LocalLayoutDirection.current
             ScrollbarLazyColumn(
-                contentPadding = contentPadding,
+                contentPadding = PaddingValues(
+                    start = contentPadding.calculateStartPadding(layoutDirection),
+                    top = contentPadding.calculateTopPadding() + 8.dp,
+                    end = contentPadding.calculateEndPadding(layoutDirection),
+                    bottom = contentPadding.calculateBottomPadding() + 16.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item {
-                    LogoHeader()
+                    MochikuPillCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        LogoHeader(showDivider = false)
+                    }
                 }
 
                 item {
-                    TextPreferenceWidget(
+                    MochikuPillPreferenceRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         title = stringResource(MR.strings.version),
                         subtitle = getVersionName(withBuildDate = true),
-                        onPreferenceClick = {
+                        onClick = {
                             val deviceInfo = CrashLogUtil(context).getDebugInfo()
                             context.copyToClipboard("Debug information", deviceInfo)
                         },
@@ -115,7 +130,8 @@ class AboutScreen : Screen() {
                 }
 
                 item {
-                    TextPreferenceWidget(
+                    MochikuPillPreferenceRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         title = stringResource(MR.strings.check_for_updates),
                         widget = {
                             AnimatedVisibility(visible = isCheckingUpdates) {
@@ -125,7 +141,7 @@ class AboutScreen : Screen() {
                                 )
                             }
                         },
-                        onPreferenceClick = {
+                        onClick = {
                             if (!isCheckingUpdates) {
                                 scope.launch {
                                     isCheckingUpdates = true
@@ -153,7 +169,8 @@ class AboutScreen : Screen() {
 
                 // KMK -->
                 item {
-                    TextPreferenceWidget(
+                    MochikuPillPreferenceRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         title = stringResource(MR.strings.whats_new),
                         widget = {
                             AnimatedVisibility(visible = isCheckingWhatsNew) {
@@ -163,7 +180,7 @@ class AboutScreen : Screen() {
                                 )
                             }
                         },
-                        onPreferenceClick = {
+                        onClick = {
                             if (!isCheckingWhatsNew) {
                                 scope.launch {
                                     isCheckingWhatsNew = true
@@ -191,7 +208,8 @@ class AboutScreen : Screen() {
 
                 if (isReleaseBuildType || isDebugBuildType) {
                     item {
-                        TextPreferenceWidget(
+                        MochikuPillPreferenceRow(
+                            modifier = Modifier.padding(horizontal = 16.dp),
                             title = stringResource(KMR.strings.whats_coming),
                             widget = {
                                 AnimatedVisibility(visible = isCheckingWhatsComing) {
@@ -201,7 +219,7 @@ class AboutScreen : Screen() {
                                     )
                                 }
                             },
-                            onPreferenceClick = {
+                            onClick = {
                                 if (!isCheckingWhatsComing) {
                                     scope.launch {
                                         isCheckingWhatsComing = true
@@ -231,9 +249,10 @@ class AboutScreen : Screen() {
                 // KMK <--
 
                 item {
-                    TextPreferenceWidget(
+                    MochikuPillPreferenceRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         title = stringResource(MR.strings.help_translate),
-                        onPreferenceClick = {
+                        onClick = {
                             uriHandler.openUri(
                                 "https://github.com/sky4302/mochiku",
                             )
@@ -242,16 +261,18 @@ class AboutScreen : Screen() {
                 }
 
                 item {
-                    TextPreferenceWidget(
+                    MochikuPillPreferenceRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         title = stringResource(MR.strings.licenses),
-                        onPreferenceClick = { navigator.push(OpenSourceLicensesScreen()) },
+                        onClick = { navigator.push(OpenSourceLicensesScreen()) },
                     )
                 }
 
                 item {
-                    TextPreferenceWidget(
+                    MochikuPillPreferenceRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         title = stringResource(MR.strings.privacy_policy),
-                        onPreferenceClick = { uriHandler.openUri("https://github.com/sky4302/mochiku") },
+                        onClick = { uriHandler.openUri("https://github.com/sky4302/mochiku") },
                     )
                 }
 

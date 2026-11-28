@@ -24,11 +24,13 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.tachiyomi.R
 
 @Composable
-fun LogoHeader() {
+fun LogoHeader(
+    showDivider: Boolean = true,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 28.dp, bottom = 16.dp),
+            .padding(top = 28.dp, bottom = if (showDivider) 16.dp else 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -61,11 +63,13 @@ fun LogoHeader() {
             letterSpacing = 0.5.sp,
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        if (showDivider) {
+            Spacer(modifier = Modifier.height(20.dp))
 
-        HorizontalDivider(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-        )
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+            )
+        }
     }
 }

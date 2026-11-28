@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
+import eu.kanade.presentation.more.settings.widget.GroupCardPosition
 import eu.kanade.presentation.more.settings.widget.PreferenceGroupHeader
+import eu.kanade.presentation.more.settings.widget.resolveGroupCardPosition
 import kotlinx.coroutines.delay
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import kotlin.time.Duration.Companion.seconds
@@ -52,15 +54,21 @@ fun PreferenceScreen(
                 is Preference.PreferenceGroup -> {
                     if (!preference.enabled) return@fastForEachIndexed
 
+                    val enabledFlags = preference.preferenceItems.map { it.enabled }
+
                     item {
                         Column {
                             PreferenceGroupHeader(title = preference.title)
                         }
                     }
-                    items(preference.preferenceItems) { item ->
+                    itemsIndexed(preference.preferenceItems) { index, item ->
+                        val position = resolveGroupCardPosition(index, enabledFlags)
+                        val hasNextEnabled = (index + 1..enabledFlags.lastIndex).any { enabledFlags[it] }
                         PreferenceItem(
                             item = item,
                             highlightKey = highlightKey,
+                            groupPosition = position,
+                            showBottomDivider = hasNextEnabled,
                         )
                     }
                     item {
@@ -75,6 +83,7 @@ fun PreferenceScreen(
                     PreferenceItem(
                         item = preference,
                         highlightKey = highlightKey,
+                        groupPosition = GroupCardPosition.Single,
                     )
                 }
             }

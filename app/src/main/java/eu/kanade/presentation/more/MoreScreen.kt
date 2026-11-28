@@ -5,15 +5,22 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -29,10 +36,10 @@ import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,7 +50,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -53,12 +63,15 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.more.profile.MochikuProfileHeader
-import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
-import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
+import eu.kanade.presentation.more.settings.widget.MochikuCircleIconBadge
+import eu.kanade.presentation.more.settings.widget.MochikuPillCard
+import eu.kanade.presentation.more.settings.widget.MochikuPillPreferenceRow
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.more.DownloadQueueState
@@ -172,173 +185,246 @@ fun MoreScreen(
     }
 
     Scaffold { contentPadding ->
+        val colorScheme = MaterialTheme.colorScheme
         val layoutDirection = LocalLayoutDirection.current
-        ScrollbarLazyColumn(
-            modifier = Modifier.nestedScroll(pullDownConnection),
-            state = listState,
-            // Top padding passes directly into MochikuProfileHeader so the dotted hero extends edge-to-edge
-            contentPadding = PaddingValues(
-                start = contentPadding.calculateStartPadding(layoutDirection),
-                end = contentPadding.calculateEndPadding(layoutDirection),
-                bottom = contentPadding.calculateBottomPadding(),
-            ),
-        ) {
-            item {
-                MochikuProfileHeader(
-                    onClickStats = onClickStats,
-                    recentStamps = passportStamps,
-                    topPadding = contentPadding.calculateTopPadding(),
-                    pullOffsetProvider = { pullOffsetPx.value },
-                    pullThresholdPx = pullThresholdPx,
-                    pullLaunchNonce = pullLaunchNonce,
-                )
-            }
-            item {
-                SwitchPreferenceWidget(
-                    title = stringResource(MR.strings.label_downloaded_only),
-                    subtitle = stringResource(MR.strings.downloaded_only_summary),
-                    icon = Icons.Outlined.CloudOff,
-                    checked = downloadedOnly,
-                    onCheckedChanged = onDownloadedOnlyChange,
-                )
-            }
-            item {
-                SwitchPreferenceWidget(
-                    title = stringResource(MR.strings.pref_incognito_mode),
-                    subtitle = stringResource(MR.strings.pref_incognito_mode_summary),
-                    // KMK -->
-                    icon = rememberAnimatedVectorPainter(
-                        AnimatedImageVector.animatedVectorResource(R.drawable.anim_incognito),
-                        incognitoMode,
-                    ),
-                    // KMK <--
-                    checked = incognitoMode,
-                    onCheckedChanged = onIncognitoModeChange,
-                )
-            }
-
-            item { HorizontalDivider() }
-
-            // SY -->
-            if (!showNavUpdates) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            ScrollbarLazyColumn(
+                modifier = Modifier.nestedScroll(pullDownConnection),
+                state = listState,
+                // Top padding passes directly into MochikuProfileHeader so the dotted hero extends edge-to-edge
+                contentPadding = PaddingValues(
+                    start = contentPadding.calculateStartPadding(layoutDirection),
+                    end = contentPadding.calculateEndPadding(layoutDirection),
+                    bottom = contentPadding.calculateBottomPadding(),
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 item {
-                    TextPreferenceWidget(
-                        title = stringResource(MR.strings.label_recent_updates),
-                        icon = Icons.Outlined.NewReleases,
-                        onPreferenceClick = onClickUpdates,
+                    MochikuProfileHeader(
+                        onClickStats = onClickStats,
+                        recentStamps = passportStamps,
+                        topPadding = contentPadding.calculateTopPadding(),
+                        pullOffsetProvider = { pullOffsetPx.value },
+                        pullThresholdPx = pullThresholdPx,
+                        pullLaunchNonce = pullLaunchNonce,
                     )
                 }
-            }
-            if (!showNavHistory) {
                 item {
-                    TextPreferenceWidget(
-                        title = stringResource(MR.strings.label_recent_manga),
-                        icon = Icons.Outlined.History,
-                        onPreferenceClick = onClickHistory,
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        MochikuMoreQuickTogglePill(
+                            title = stringResource(MR.strings.label_downloaded_only),
+                            icon = Icons.Outlined.CloudOff,
+                            checked = downloadedOnly,
+                            onCheckedChange = onDownloadedOnlyChange,
+                            modifier = Modifier.weight(1f),
+                        )
+                        MochikuMoreQuickTogglePill(
+                            title = stringResource(MR.strings.pref_incognito_mode),
+                            icon = rememberAnimatedVectorPainter(
+                                AnimatedImageVector.animatedVectorResource(R.drawable.anim_incognito),
+                                incognitoMode,
+                            ),
+                            checked = incognitoMode,
+                            onCheckedChange = onIncognitoModeChange,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
-            }
-            // SY <--
 
-            item {
-                val downloadQueueState = downloadQueueStateProvider()
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_download_queue),
-                    subtitle = when (downloadQueueState) {
-                        DownloadQueueState.Stopped -> null
-                        is DownloadQueueState.Paused -> {
-                            val pending = downloadQueueState.pending
-                            if (pending == 0) {
-                                stringResource(MR.strings.paused)
-                            } else {
-                                "${stringResource(MR.strings.paused)} • ${
-                                    pluralStringResource(
-                                        MR.plurals.download_queue_summary,
-                                        count = pending,
-                                        pending,
-                                    )
-                                }"
+                // SY -->
+                if (!showNavUpdates) {
+                    item {
+                        MochikuPillPreferenceRow(
+                            title = stringResource(MR.strings.label_recent_updates),
+                            icon = Icons.Outlined.NewReleases,
+                            onClick = onClickUpdates,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+                }
+                if (!showNavHistory) {
+                    item {
+                        MochikuPillPreferenceRow(
+                            title = stringResource(MR.strings.label_recent_manga),
+                            icon = Icons.Outlined.History,
+                            onClick = onClickHistory,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+                }
+                // SY <--
+
+                item {
+                    val downloadQueueState = downloadQueueStateProvider()
+                    MochikuPillPreferenceRow(
+                        title = stringResource(MR.strings.label_download_queue),
+                        subtitle = when (downloadQueueState) {
+                            DownloadQueueState.Stopped -> null
+                            is DownloadQueueState.Paused -> {
+                                val pending = downloadQueueState.pending
+                                if (pending == 0) {
+                                    stringResource(MR.strings.paused)
+                                } else {
+                                    "${stringResource(MR.strings.paused)} • ${
+                                        pluralStringResource(
+                                            MR.plurals.download_queue_summary,
+                                            count = pending,
+                                            pending,
+                                        )
+                                    }"
+                                }
                             }
-                        }
-                        is DownloadQueueState.Downloading -> {
-                            val pending = downloadQueueState.pending
-                            pluralStringResource(MR.plurals.download_queue_summary, count = pending, pending)
-                        }
-                    },
-                    icon = Icons.Outlined.GetApp,
-                    onPreferenceClick = onClickDownloadQueue,
-                )
-            }
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.categories),
-                    icon = Icons.AutoMirrored.Outlined.Label,
-                    onPreferenceClick = onClickCategories,
-                )
-            }
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_stats),
-                    icon = Icons.Outlined.QueryStats,
-                    onPreferenceClick = onClickStats,
-                )
-            }
-            // KMK -->
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(KMR.strings.option_label_library_update_errors),
-                    icon = Icons.Outlined.NewReleases,
-                    onPreferenceClick = onClickLibraryUpdateErrors,
-                )
-            }
-            // KMK <--
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_data_storage),
-                    icon = Icons.Outlined.Storage,
-                    onPreferenceClick = onClickDataAndStorage,
-                )
-            }
-            // SY -->
-            if (exhPreferences.isHentaiEnabled().get() || delegateSourcePreferences.delegateSources().get()) {
-                item {
-                    TextPreferenceWidget(
-                        title = stringResource(SYMR.strings.eh_batch_add),
-                        icon = Icons.AutoMirrored.Outlined.PlaylistAdd,
-                        onPreferenceClick = onClickBatchAdd,
+                            is DownloadQueueState.Downloading -> {
+                                val pending = downloadQueueState.pending
+                                pluralStringResource(MR.plurals.download_queue_summary, count = pending, pending)
+                            }
+                        },
+                        icon = Icons.Outlined.GetApp,
+                        onClick = onClickDownloadQueue,
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
-            }
-            // SY <--
+                item {
+                    MochikuPillPreferenceRow(
+                        title = stringResource(MR.strings.categories),
+                        icon = Icons.AutoMirrored.Outlined.Label,
+                        onClick = onClickCategories,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                item {
+                    MochikuPillPreferenceRow(
+                        title = stringResource(MR.strings.label_stats),
+                        icon = Icons.Outlined.QueryStats,
+                        onClick = onClickStats,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                // KMK -->
+                item {
+                    MochikuPillPreferenceRow(
+                        title = stringResource(KMR.strings.option_label_library_update_errors),
+                        icon = Icons.Outlined.NewReleases,
+                        onClick = onClickLibraryUpdateErrors,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                // KMK <--
+                item {
+                    MochikuPillPreferenceRow(
+                        title = stringResource(MR.strings.label_data_storage),
+                        icon = Icons.Outlined.Storage,
+                        onClick = onClickDataAndStorage,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                // SY -->
+                if (exhPreferences.isHentaiEnabled().get() || delegateSourcePreferences.delegateSources().get()) {
+                    item {
+                        MochikuPillPreferenceRow(
+                            title = stringResource(SYMR.strings.eh_batch_add),
+                            icon = Icons.AutoMirrored.Outlined.PlaylistAdd,
+                            onClick = onClickBatchAdd,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+                }
+                // SY <--
 
-            item { HorizontalDivider() }
+                item {
+                    MochikuPillPreferenceRow(
+                        title = stringResource(MR.strings.label_settings),
+                        icon = Icons.Outlined.Settings,
+                        onClick = onClickSettings,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                item {
+                    MochikuPillPreferenceRow(
+                        title = stringResource(MR.strings.pref_category_about),
+                        icon = Icons.Outlined.Info,
+                        onClick = onClickAbout,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                item {
+                    MochikuPillPreferenceRow(
+                        title = stringResource(MR.strings.label_help),
+                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                        onClick = { uriHandler.openUri(Constants.URL_HELP) },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                // KMK -->
+                item {
+                    Sponsor()
+                }
+                // KMK <--
+            }
 
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_settings),
-                    icon = Icons.Outlined.Settings,
-                    onPreferenceClick = onClickSettings,
-                )
-            }
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.pref_category_about),
-                    icon = Icons.Outlined.Info,
-                    onPreferenceClick = onClickAbout,
-                )
-            }
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_help),
-                    icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                    onPreferenceClick = { uriHandler.openUri(Constants.URL_HELP) },
-                )
-            }
-            // KMK -->
-            item {
-                Sponsor()
-            }
-            // KMK <--
+            val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            val statusBarBg = colorScheme.background
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(statusBarHeight + 16.dp)
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            0f to statusBarBg,
+                            0.65f to statusBarBg.copy(alpha = 0.88f),
+                            1f to Color.Transparent,
+                        ),
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MochikuMoreQuickTogglePill(
+    title: String,
+    icon: Any,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    MochikuPillCard(
+        modifier = modifier,
+        onClick = { onCheckedChange(!checked) },
+        cornerRadius = 20.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            MochikuCircleIconBadge(
+                icon = icon,
+                badgeSize = 32.dp,
+                iconSize = 17.dp,
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = checked,
+                onCheckedChange = null,
+                modifier = Modifier.scale(0.82f),
+            )
         }
     }
 }
